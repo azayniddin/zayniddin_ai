@@ -3,16 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Shaxsiy AI Yordamchi — Sizning Intellektual Hamrohingiz</title>
-  <meta name="description" content="Sizning shaxsiy AI yordamchingiz: GPT-4o, jonli ekran tahlili, ovozli suhbat va chat tarixi.">
+  <title>zayniddin_ai — Shaxsiy AI Yordamchi</title>
+  <meta name="description" content="zayniddin_ai: GPT-4o, Jonli Ekran Vision, Siri ovozli muloqot va shaxsiy intellekt hamrohi.">
   
   <!-- PWA & Mobile Web App Meta Tags -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Alif AI">
-  <meta name="theme-color" content="#090a0f">
+  <meta name="apple-mobile-web-app-title" content="zayniddin_ai">
+  <meta name="application-name" content="zayniddin_ai">
+  <meta name="theme-color" content="#07090e">
+  <meta name="msapplication-TileColor" content="#07090e">
   
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>">
+  <link rel="icon" type="image/svg+xml" href="/icons/icon.svg">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
   
   <!-- Highlight.js CSS for Code Highlighting -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
@@ -39,11 +44,11 @@
       <div class="sidebar-header">
         <div class="brand-badge">
           <div class="brand-logo">
-            <i data-lucide="sparkles" style="color: #fff; width: 20px; height: 20px;"></i>
+            <img src="/icons/icon.svg" alt="zayniddin_ai" class="brand-logo-img">
           </div>
           <div class="brand-text">
-            <h1 id="brandAssistantName">Alif AI</h1>
-            <span>Shaxsiy Yordamchi</span>
+            <h1 id="brandAssistantName">zayniddin_ai</h1>
+            <span>Shaxsiy Intellekt</span>
           </div>
         </div>
         <button class="icon-button" id="toggleSidebarBtn" title="Panelni yopish">
@@ -66,6 +71,13 @@
 
       <!-- Footer: User & Settings -->
       <div class="sidebar-footer">
+        <!-- Install App Button (PWA) -->
+        <button class="sidebar-install-btn" id="sidebarInstallBtn" style="display: none;">
+          <i data-lucide="download" style="width: 17px; height: 17px; color: var(--accent-cyan);"></i>
+          <span>Ilovani O'rnatish</span>
+          <span class="install-badge-chip">PWA</span>
+        </button>
+
         <div class="user-badge">
           <div class="user-avatar" id="userAvatarText">D</div>
           <div class="user-info-text">
@@ -124,11 +136,12 @@
           
           <!-- Welcome Hero (faqat chat bo'sh bo'lganda ko'rinadi) -->
           <div class="welcome-hero" id="welcomeHero">
-            <div class="welcome-avatar">
-              <i data-lucide="bot" style="width: 36px; height: 36px; color: #fff;"></i>
+            <div class="welcome-avatar-container">
+              <img src="/icons/icon.svg" alt="zayniddin_ai" class="welcome-avatar-img">
+              <div class="avatar-ring-pulse"></div>
             </div>
-            <h2>Salom! Nima ustida ishlaymiz?</h2>
-            <p>Men sizning shaxsiy AI yordamchingizman. Kod yozish, xatolarni tuzatish, ekrandagi rasm/kodni ko'rib tahlil qilish yoki har qanday savolga javob berishda siz bilan birgaman.</p>
+            <h2>Salom! Men <span class="gradient-text">zayniddin_ai</span></h2>
+            <p>Sizning shaxsiy va yuqori intellektli AI hamrohingiz. Kod yozish, ekrandagi xatolarni ko'rib tahlil qilish, Siri ovozli muloqot va barcha murakkab vazifalarda siz bilan birgaman.</p>
 
             <div class="quick-prompts">
               <div class="prompt-card" data-prompt="Koddagi qiyin algoritmni hayotiy misol bilan sodda tushuntirib ber">
@@ -227,11 +240,19 @@
 
   </div>
 
-  <!-- VOICE ORB FULLSCREEN MODAL -->
+  <!-- VOICE SIRI FULLSCREEN MODAL -->
   <div class="voice-modal" id="voiceModal">
+    <!-- iOS 18 Siri Screen Edge Glow -->
+    <div class="siri-edge-glow"></div>
+
     <button class="voice-close-btn" id="closeVoiceModalBtn" title="Yopish">
       <i data-lucide="x" style="width: 22px; height: 22px;"></i>
     </button>
+
+    <div class="siri-header-tag">
+      <img src="/icons/icon.svg" alt="zayniddin_ai" class="siri-logo-mini">
+      <span>zayniddin_ai Siri Voice</span>
+    </div>
 
     <div class="voice-orb-container">
       <canvas id="voiceCanvas"></canvas>
@@ -284,7 +305,7 @@
 
       <div class="setting-group">
         <label for="assistantNameInput">AI Yordamchi Ismi</label>
-        <input type="text" id="assistantNameInput" placeholder="Masalan: Alif, Jarvis...">
+        <input type="text" id="assistantNameInput" placeholder="zayniddin_ai">
       </div>
 
       <div class="setting-group">
@@ -296,6 +317,28 @@
         <button class="btn-secondary" id="cancelSettingsBtn">Bekor qilish</button>
         <button class="btn-primary" id="saveSettingsBtn">Saqlash</button>
       </div>
+    </div>
+  </div>
+
+  <!-- ANDROID / MOBILE PWA AUTO-INSTALL BANNER -->
+  <div class="pwa-install-banner glass-card" id="pwaInstallBanner" style="display: none;">
+    <div class="pwa-install-left">
+      <div class="pwa-icon-wrapper">
+        <img src="/icons/icon.svg" alt="zayniddin_ai" class="pwa-app-icon">
+      </div>
+      <div class="pwa-install-info">
+        <h4>zayniddin_ai</h4>
+        <p>Telefonga ilova (APK kabi) o'rnatish</p>
+      </div>
+    </div>
+    <div class="pwa-install-actions">
+      <button class="btn-primary pwa-install-action-btn" id="pwaInstallBtn">
+        <i data-lucide="download" style="width: 15px; height: 15px;"></i>
+        <span>O'rnatish</span>
+      </button>
+      <button class="pwa-dismiss-btn" id="pwaDismissBtn" title="Keyinroq">
+        <i data-lucide="x" style="width: 16px; height: 16px;"></i>
+      </button>
     </div>
   </div>
 

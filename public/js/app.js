@@ -108,7 +108,7 @@ function updateProfileUI() {
     userAvatarTextEl.textContent = p.userName.charAt(0).toUpperCase();
   }
   if (p.assistantName) {
-    brandAssistantNameEl.textContent = p.assistantName + ' AI';
+    brandAssistantNameEl.textContent = p.assistantName;
   }
   if (userNameInput) userNameInput.value = p.userName || '';
   if (assistantNameInput) assistantNameInput.value = p.assistantName || '';
@@ -602,12 +602,82 @@ function setupEventListeners() {
   });
 }
 
+// PWA O'rnatishni boshqarish (Android & Desktop)
+let deferredInstallPrompt = null;
+
+function setupPWAInstall() {
+  const pwaInstallBanner = document.getElementById('pwaInstallBanner');
+  const pwaInstallBtn = document.getElementById('pwaInstallBtn');
+  const pwaDismissBtn = document.getElementById('pwaDismissBtn');
+  const sidebarInstallBtn = document.getElementById('sidebarInstallBtn');
+
+  // Service Worker ro'yxatdan o'tkazish
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/service-worker.js')
+      .then((reg) => console.log('PWA Service Worker ro‘yxatdan o‘tdi:', reg.scope))
+      .catch((err) => console.warn('Service Worker ogohlantirishi:', err));
+  }
+
+  // Standalone rejimda tekshirish (o'rnatilgan bo'lsa bannerni ko'rsatmaymiz)
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+  if (isStandalone) {
+    console.log('zayniddin_ai standalone ilova rejimida ishlamoqda');
+    return;
+  }
+
+  // Android va Chromium brauzerlarida o'rnatish hodisasi
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+
+    if (sidebarInstallBtn) sidebarInstallBtn.style.display = 'flex';
+
+    // Agar oldin yopilmagan bo'lsa, avtomatik bannerni chiqarish
+    const dismissed = sessionStorage.getItem('pwa_dismissed');
+    if (!dismissed && pwaInstallBanner) {
+      setTimeout(() => {
+        pwaInstallBanner.style.display = 'flex';
+        if (window.lucide) lucide.createIcons();
+      }, 1500);
+    }
+  });
+
+  const triggerInstall = async () => {
+    if (deferredInstallPrompt) {
+      deferredInstallPrompt.prompt();
+      const { outcome } = await deferredInstallPrompt.userChoice;
+      console.log('O‘rnatish tanlovi:', outcome);
+      deferredInstallPrompt = null;
+      if (pwaInstallBanner) pwaInstallBanner.style.display = 'none';
+      if (sidebarInstallBtn) sidebarInstallBtn.style.display = 'none';
+    } else {
+      alert("Ilovani o'rnatish uchun brauzer menyusidagi (3 nuqta) 'Bosh ekranga qo'shish' (Add to Home Screen) tugmasini bosing.");
+    }
+  };
+
+  pwaInstallBtn?.addEventListener('click', triggerInstall);
+  sidebarInstallBtn?.addEventListener('click', triggerInstall);
+
+  pwaDismissBtn?.addEventListener('click', () => {
+    if (pwaInstallBanner) pwaInstallBanner.style.display = 'none';
+    sessionStorage.setItem('pwa_dismissed', 'true');
+  });
+
+  window.addEventListener('appinstalled', () => {
+    console.log('zayniddin_ai telefonga muvaffaqiyatli o‘rnatildi!');
+    if (pwaInstallBanner) pwaInstallBanner.style.display = 'none';
+    if (sidebarInstallBtn) sidebarInstallBtn.style.display = 'none';
+    deferredInstallPrompt = null;
+  });
+}
+
 // Dasturni initsializatsiya qilish
 async function initApp() {
   await checkServerStatus();
   await loadProfile();
   await loadChats();
   setupEventListeners();
+  setupPWAInstall();
   if (window.lucide) lucide.createIcons();
 }
 

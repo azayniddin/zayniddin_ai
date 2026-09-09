@@ -52,7 +52,7 @@ async function saveChatsData(chats) {
 async function getProfileData() {
   const defaultProfile = {
     userName: process.env.USER_NAME || 'Do‘stim',
-    assistantName: 'Alif',
+    assistantName: 'zayniddin_ai',
     language: 'uz',
     codingExperience: 'Fullstack / Muhandis',
     bio: 'Men o‘z oldiga ulkan maqsadlar qo‘ygan dasturchi va yaratuvchiman.',

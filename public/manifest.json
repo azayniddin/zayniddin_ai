@@ -1,0 +1,33 @@
+{
+  "name": "zayniddin_ai - Shaxsiy AI Yordamchi",
+  "short_name": "zayniddin_ai",
+  "description": "GPT-4o, Jonli Ekran Vision, Siri ovozli rejim va shaxsiy xotiraga ega aqlli yordamchi",
+  "start_url": "/",
+  "id": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#07090e",
+  "theme_color": "#07090e",
+  "orientation": "portrait-primary",
+  "categories": ["productivity", "utilities", "personalization"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
