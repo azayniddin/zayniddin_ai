@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shaxsiy AI Yordamchi — Sizning Intellektual Hamrohingiz</title>
+  <meta name="description" content="Sizning shaxsiy AI yordamchingiz: GPT-4o, jonli ekran tahlili, ovozli suhbat va chat tarixi.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>">
+  
+  <!-- Highlight.js CSS for Code Highlighting -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+  
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="/css/style.css">
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Marked.js Markdown Parser -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <!-- Highlight.js Script -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+</head>
+<body>
+
+  <div class="app-container">
+    
+    <!-- LEFT SIDEBAR: History & Profile -->
+    <aside class="sidebar glass" id="sidebar">
+      <div class="sidebar-header">
+        <div class="brand-badge">
+          <div class="brand-logo">
+            <i data-lucide="sparkles" style="color: #fff; width: 20px; height: 20px;"></i>
+          </div>
+          <div class="brand-text">
+            <h1 id="brandAssistantName">Alif AI</h1>
+            <span>Shaxsiy Yordamchi</span>
+          </div>
+        </div>
+        <button class="icon-button" id="toggleSidebarBtn" title="Panelni yopish">
+          <i data-lucide="panel-left-close" style="width: 18px; height: 18px;"></i>
+        </button>
+      </div>
+
+      <button class="new-chat-btn" id="newChatBtn">
+        <i data-lucide="plus-circle" style="width: 18px; height: 18px;"></i>
+        <span>Yangi Suhbat</span>
+      </button>
+
+      <!-- Chat History -->
+      <div class="history-section">
+        <div class="history-label">Chat Tarixi</div>
+        <div id="chatsList">
+          <!-- Chat elementlari JS orqali yuklanadi -->
+        </div>
+      </div>
+
+      <!-- Footer: User & Settings -->
+      <div class="sidebar-footer">
+        <div class="user-badge">
+          <div class="user-avatar" id="userAvatarText">D</div>
+          <div class="user-info-text">
+            <div class="user-name-title" id="sidebarUserName">Do‘stim</div>
+            <div class="user-status-sub">
+              <span class="status-dot"></span>
+              <span>GPT-4o Online</span>
+            </div>
+          </div>
+          <button class="icon-button" id="openSettingsBtn" title="Sozlamalar">
+            <i data-lucide="settings" style="width: 16px; height: 16px;"></i>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN CHAT AREA -->
+    <main class="chat-main">
+      
+      <!-- Top Navigation -->
+      <header class="top-nav glass">
+        <div class="current-chat-details">
+          <h2 id="activeChatTitle">Yangi Suhbat</h2>
+          <span id="activeChatTime">Bugun</span>
+        </div>
+
+        <div class="action-pill-group">
+          <!-- Vision Mode Button -->
+          <button class="pill-btn vision-btn" id="toggleVisionBtn" title="Ekraningizni AI ga ko'rsating">
+            <i data-lucide="monitor" style="width: 16px; height: 16px;"></i>
+            <span id="visionBtnText">Ekranni Ko‘rish</span>
+          </button>
+
+          <!-- Voice Mode Button -->
+          <button class="pill-btn voice-btn" id="openVoiceModalBtn" title="Jonli Ovozli Suhbat">
+            <i data-lucide="mic" style="width: 16px; height: 16px;"></i>
+            <span>Jonli Ovoz</span>
+          </button>
+
+          <!-- Settings Button -->
+          <button class="icon-button" id="topSettingsBtn" title="Sozlamalar">
+            <i data-lucide="sliders-horizontal" style="width: 18px; height: 18px;"></i>
+          </button>
+        </div>
+      </header>
+
+      <!-- Messages Stream Viewport -->
+      <section class="messages-container" id="messagesContainer">
+        <div class="messages-inner" id="messagesInner">
+          
+          <!-- Welcome Hero (faqat chat bo'sh bo'lganda ko'rinadi) -->
+          <div class="welcome-hero" id="welcomeHero">
+            <div class="welcome-avatar">
+              <i data-lucide="bot" style="width: 36px; height: 36px; color: #fff;"></i>
+            </div>
+            <h2>Salom! Nima ustida ishlaymiz?</h2>
+            <p>Men sizning shaxsiy AI yordamchingizman. Kod yozish, xatolarni tuzatish, butun ekranni tahlil qilish yoki murakkab hayotiy g'oyalarni muhokama qilishda 100% siz bilan birgaman.</p>
+
+            <div class="quick-prompts">
+              <div class="prompt-card" data-prompt="Koddagi qiyin algoritmni hayotiy misol bilan sodda tushuntirib ber">
+                <h4>🧠 Kodni Tushuntirish</h4>
+                <p>Murakkab algoritmni oddiy misolda anglash</p>
+              </div>
+              <div class="prompt-card" data-prompt="Menga hozirgi zamonaviy Fullstack loyiha arxitekturasini qadamma-qadam rejalashtirib ber">
+                <h4>🏗️ Loyiha Arxitekturasi</h4>
+                <p>Clean architecture va best practice reja</p>
+              </div>
+              <div class="prompt-card" data-prompt="Ekranni ko'rib koddagi xatoni topishga yordam ber">
+                <h4>🖥️ Ekrandagi Xatoni Qidirish</h4>
+                <p>Ekranni ulashib xatolarni darhol tuzatish</p>
+              </div>
+              <div class="prompt-card" data-prompt="Bugungi rejamni tuzishga va eng muhim vazifalarni aniqlashga yordam ber">
+                <h4>⚡ Shaxsiy Maslahat</h4>
+                <p>Vaqtni to'g'ri taqsimlash va unumdorlik</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Xabarlar bu yerga dinamik qo'shiladi -->
+        </div>
+      </section>
+
+      <!-- Bottom Chat Input -->
+      <footer class="chat-input-area">
+        <div class="input-box-wrapper glass">
+          
+          <!-- Screen Snapshot Tag Preview if attached -->
+          <div id="screenAttachmentBadge" class="screen-preview-tag" style="display: none;">
+            <i data-lucide="image" style="width: 14px; height: 14px;"></i>
+            <span>Ekran tasviri biriktirildi</span>
+            <img id="attachedScreenImg" src="" alt="Snapshot">
+            <button id="removeAttachedScreenBtn" title="Olib tashlash">
+              <i data-lucide="x" style="width: 14px; height: 14px;"></i>
+            </button>
+          </div>
+
+          <div class="input-row">
+            <textarea 
+              id="messageInput" 
+              placeholder="Shaxsiy yordamchingizga savol bering yoki topshiriq bering (Shift+Enter yangi qator)..." 
+              rows="1"
+            ></textarea>
+            
+            <div class="input-actions">
+              <!-- Capture screen snapshot button directly into prompt -->
+              <button class="icon-button" id="captureScreenDirectBtn" title="Ekrandan tezkor tasvir olish">
+                <i data-lucide="camera" style="width: 18px; height: 18px;"></i>
+              </button>
+
+              <button class="send-btn" id="sendMessageBtn" title="Yuborish">
+                <i data-lucide="arrow-up" style="width: 20px; height: 20px;"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </footer>
+
+      <!-- Screen Vision Floating Live Mini Window -->
+      <div class="screen-pip-panel glass" id="screenPipPanel">
+        <div class="screen-pip-header">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <i data-lucide="cast" style="width: 16px; height: 16px;"></i>
+            <span>Jonli Ekran Nazorati</span>
+          </div>
+          <button class="icon-button" id="closeScreenPipBtn" style="width: 24px; height: 24px; border: none;">
+            <i data-lucide="x" style="width: 14px; height: 14px;"></i>
+          </button>
+        </div>
+        <video id="screenPipVideo" class="screen-pip-video" autoplay playsinline muted></video>
+        <div class="screen-pip-actions">
+          <button class="screen-pip-btn primary" id="analyzePipScreenBtn">
+            <i data-lucide="scan-eye" style="width: 15px; height: 15px;"></i>
+            <span>Ekranni Tahlil Qil</span>
+          </button>
+          <button class="screen-pip-btn" id="attachPipToInputBtn">
+            <i data-lucide="paperclip" style="width: 15px; height: 15px;"></i>
+            <span>Chatga Biriktir</span>
+          </button>
+        </div>
+      </div>
+
+    </main>
+
+  </div>
+
+  <!-- VOICE ORB FULLSCREEN MODAL -->
+  <div class="voice-modal" id="voiceModal">
+    <button class="voice-close-btn" id="closeVoiceModalBtn" title="Yopish">
+      <i data-lucide="x" style="width: 20px; height: 20px;"></i>
+    </button>
+
+    <div class="voice-orb-container">
+      <canvas id="voiceCanvas"></canvas>
+    </div>
+
+    <div class="voice-status-badge" id="voiceStatusBadge">
+      <span class="status-dot"></span>
+      <span id="voiceStatusText">Eshityapman... Marhamat, gapiring!</span>
+    </div>
+
+    <div class="voice-transcript-box" id="voiceTranscriptBox">
+      "Siz gapirganingizda so‘zlaringiz shu yerda aks etadi va AI sizga o‘zbek tilida javob beradi."
+    </div>
+
+    <div class="voice-controls">
+      <button class="voice-control-btn mic-active" id="voiceMicToggleBtn" title="Mikrofon">
+        <i data-lucide="mic" id="voiceMicIcon" style="width: 24px; height: 24px;"></i>
+      </button>
+      <button class="voice-control-btn" id="voiceStopSpeechBtn" title="Gapirishni to'xtatish">
+        <i data-lucide="volume-x" style="width: 24px; height: 24px;"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- SETTINGS MODAL -->
+  <div class="modal-backdrop" id="settingsModal">
+    <div class="settings-card glass-card">
+      <div class="settings-header">
+        <h3>Shaxsiy Yordamchi Sozlamalari</h3>
+        <button class="icon-button" id="closeSettingsModalBtn">
+          <i data-lucide="x" style="width: 16px; height: 16px;"></i>
+        </button>
+      </div>
+
+      <div class="setting-group">
+        <label for="apiKeyInput">OpenAI API Kaliti (ixtiyoriy, agar server .env da bo'lmasa)</label>
+        <input type="password" id="apiKeyInput" placeholder="sk-proj-...">
+        <small>Brauzeringizda xavfsiz saqlanadi va bevosita OpenAI API ga murojaatda ishlatiladi.</small>
+      </div>
+
+      <div class="setting-group">
+        <label for="userNameInput">Sizning Ismingiz</label>
+        <input type="text" id="userNameInput" placeholder="Masalan: Sardor, Azizbek...">
+      </div>
+
+      <div class="setting-group">
+        <label for="assistantNameInput">AI Yordamchi Ismi</label>
+        <input type="text" id="assistantNameInput" placeholder="Masalan: Alif, Jarvis...">
+      </div>
+
+      <div class="setting-group">
+        <label for="customRulesInput">Shaxsiy Qoidalar va Talablar (AI xarakteri)</label>
+        <textarea id="customRulesInput" rows="3" placeholder="Menga qanday uslubda javob berishini xohlaysiz?"></textarea>
+      </div>
+
+      <div class="settings-footer">
+        <button class="btn-secondary" id="cancelSettingsBtn">Bekor qilish</button>
+        <button class="btn-primary" id="saveSettingsBtn">Saqlash</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- APP SCRIPTS -->
+  <script src="/js/voiceOrb.js"></script>
+  <script src="/js/screenVision.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+</html>
