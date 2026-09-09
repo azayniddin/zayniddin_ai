@@ -55,6 +55,39 @@ function getAuthHeaders() {
   return headers;
 }
 
+// Server holati va API kalitini tekshirish
+async function checkServerStatus() {
+  const badgeEl = document.getElementById('serverKeyBadge');
+  const badgeText = document.getElementById('serverKeyBadgeText');
+  const apiKeyInput = document.getElementById('apiKeyInput');
+
+  try {
+    const res = await fetch('/api/status');
+    if (res.ok) {
+      const data = await res.json();
+      window.appState.hasServerKey = data.hasServerKey;
+      if (badgeEl && badgeText) {
+        badgeEl.style.display = 'flex';
+        if (data.hasServerKey) {
+          badgeEl.className = 'server-key-badge';
+          badgeText.innerHTML = '<span><strong>🟢 OpenAI API kaliti serverda sozlangan!</strong> Ilovada kalit kiritish shart emas.</span>';
+          if (apiKeyInput && !window.appState.apiKey) {
+            apiKeyInput.placeholder = 'Server kaliti faol (kiritish shart emas)';
+          }
+        } else {
+          badgeEl.className = 'server-key-badge warning';
+          badgeText.innerHTML = '<span><strong>⚠️ Serverda API kalit topilmadi.</strong> Railway / .env da sozlang yoki pastda kiriting.</span>';
+          if (apiKeyInput) {
+            apiKeyInput.placeholder = 'sk-proj-...';
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('Status tekshirishda xatolik:', err);
+  }
+}
+
 // 1. Profilni yuklash
 async function loadProfile() {
   try {
@@ -479,6 +512,7 @@ function setupEventListeners() {
   // Sozlamalar modalini ochish / yopish
   const openSettings = () => {
     updateProfileUI();
+    checkServerStatus();
     settingsModalEl.classList.add('active');
   };
   const closeSettings = () => {
@@ -570,6 +604,7 @@ function setupEventListeners() {
 
 // Dasturni initsializatsiya qilish
 async function initApp() {
+  await checkServerStatus();
   await loadProfile();
   await loadChats();
   setupEventListeners();

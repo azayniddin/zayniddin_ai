@@ -111,6 +111,11 @@ Doimo qotmasdan, aniq, mantiqiy va maksimal darajada foydali javob ber!`;
 
 // ================= API ROUTES =================
 
+// Health check (Railway va cloud platformalar monitoringi uchun)
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', uptime: process.uptime() });
+});
+
 // Status tekshiruvi
 app.get('/api/status', (req, res) => {
   const hasServerKey = Boolean(process.env.OPENAI_API_KEY);
@@ -415,8 +420,9 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Serverni ishga tushirish
-app.listen(PORT, () => {
-  console.log(`🚀 Shaxsiy AI Assistent serveri ishga tushdi: http://localhost:${PORT}`);
+// Serverni ishga tushirish (0.0.0.0 orqali Railway va bulutli platformalarda to'g'ri bog'lanadi)
+const HOST = '0.0.0.0';
+app.listen(PORT, HOST, () => {
+  console.log(`🚀 Shaxsiy AI Assistent serveri ishga tushdi: http://${HOST}:${PORT}`);
   console.log(`📡 OpenAI Key: ${process.env.OPENAI_API_KEY ? 'Mavjud (Server ENV)' : 'Mavjud emas (Foydalanuvchi UI orqali kiritishi mumkin)'}`);
 });

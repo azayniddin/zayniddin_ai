@@ -266,10 +266,15 @@
         </button>
       </div>
 
-      <div class="setting-group">
-        <label for="apiKeyInput">OpenAI API Kaliti (ixtiyoriy, agar server .env da bo'lmasa)</label>
-        <input type="password" id="apiKeyInput" placeholder="sk-proj-...">
-        <small>Brauzeringizda xavfsiz saqlanadi va bevosita OpenAI API ga murojaatda ishlatiladi.</small>
+      <div class="server-key-badge" id="serverKeyBadge">
+        <i data-lucide="shield-check" style="width: 18px; height: 18px; color: #10b981; flex-shrink: 0;"></i>
+        <span id="serverKeyBadgeText">Server OpenAI kaliti tekshirilmoqda...</span>
+      </div>
+
+      <div class="setting-group" id="apiKeySettingGroup">
+        <label for="apiKeyInput">OpenAI API Kaliti (ixtiyoriy override)</label>
+        <input type="password" id="apiKeyInput" placeholder="Server kalitidan avtomatik foydalaniladi...">
+        <small id="apiKeyHelpText">Serverda (.env yoki Railway Variables) kalit mavjud bo'lsa, bu yerga kalit kiritish shart emas.</small>
       </div>
 
       <div class="setting-group">

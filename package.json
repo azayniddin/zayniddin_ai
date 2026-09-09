@@ -16,7 +16,7 @@
     "openai": "^4.85.4"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": "20"
   },
   "keywords": [
     "personal-ai",
