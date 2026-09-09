@@ -75,7 +75,19 @@ body {
   flex-direction: column;
   border-right: 1px solid var(--border-subtle);
   z-index: 20;
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: margin-left 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.25s ease;
+}
+
+/* Desktop Collapsed Sidebar */
+@media (min-width: 769px) {
+  .sidebar.collapsed {
+    margin-left: calc(-1 * var(--sidebar-w));
+    opacity: 0;
+    pointer-events: none;
+    border-right-color: transparent;
+  }
 }
 
 .sidebar-header {
@@ -1283,8 +1295,24 @@ canvas#voiceCanvas {
    📱 MOBILE RESPONSIVE DESIGN & TOUCH OPTIMIZATIONS
    =================================================== */
 
-.mobile-menu-btn {
-  display: none;
+.sidebar-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 9px;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  transition: all 0.2s;
+}
+
+.sidebar-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.15);
 }
 
 .sidebar-overlay {

@@ -496,6 +496,10 @@ function setupEventListeners() {
 
   newChatBtn.addEventListener('click', () => {
     createNewChat();
+    if (window.innerWidth <= 768) {
+      document.getElementById('sidebar')?.classList.remove('mobile-open');
+      document.getElementById('sidebarOverlay')?.classList.remove('active');
+    }
   });
 
   // Tezkor prompt kartalari
@@ -537,7 +541,7 @@ function setupEventListeners() {
 
     const updatedProfile = {
       userName: userNameInput.value.trim() || 'Do‘stim',
-      assistantName: assistantNameInput.value.trim() || 'Alif',
+      assistantName: assistantNameInput.value.trim() || 'zayniddin_ai',
       customRules: customRulesInput.value.trim()
     };
 
@@ -557,26 +561,57 @@ function setupEventListeners() {
     }
   });
 
-  // ================= Mobil Menyu Boshqaruvi =================
+  // ================= Sidebar (Yon Panel) Boshqaruvi =================
   const mobileMenuBtn = document.getElementById('mobileMenuBtn');
   const sidebarEl = document.getElementById('sidebar');
   const sidebarOverlayEl = document.getElementById('sidebarOverlay');
   const toggleSidebarBtn = document.getElementById('toggleSidebarBtn');
   const quickVoiceInputBtn = document.getElementById('quickVoiceInputBtn');
 
-  const openMobileSidebar = () => {
-    sidebarEl?.classList.add('mobile-open');
-    sidebarOverlayEl?.classList.add('active');
+  // Saqlangan holatni tiklash
+  if (window.innerWidth > 768 && localStorage.getItem('sidebar_desktop_collapsed') === 'true') {
+    sidebarEl?.classList.add('collapsed');
+  }
+
+  const closeSidebar = () => {
+    if (window.innerWidth <= 768) {
+      sidebarEl?.classList.remove('mobile-open');
+      sidebarOverlayEl?.classList.remove('active');
+    } else {
+      sidebarEl?.classList.add('collapsed');
+      localStorage.setItem('sidebar_desktop_collapsed', 'true');
+    }
   };
 
-  const closeMobileSidebar = () => {
-    sidebarEl?.classList.remove('mobile-open');
-    sidebarOverlayEl?.classList.remove('active');
+  const openSidebar = () => {
+    if (window.innerWidth <= 768) {
+      sidebarEl?.classList.add('mobile-open');
+      sidebarOverlayEl?.classList.add('active');
+    } else {
+      sidebarEl?.classList.remove('collapsed');
+      localStorage.setItem('sidebar_desktop_collapsed', 'false');
+    }
   };
 
-  mobileMenuBtn?.addEventListener('click', openMobileSidebar);
-  toggleSidebarBtn?.addEventListener('click', closeMobileSidebar);
-  sidebarOverlayEl?.addEventListener('click', closeMobileSidebar);
+  const toggleSidebar = () => {
+    if (window.innerWidth <= 768) {
+      if (sidebarEl?.classList.contains('mobile-open')) {
+        closeSidebar();
+      } else {
+        openSidebar();
+      }
+    } else {
+      if (sidebarEl?.classList.contains('collapsed')) {
+        openSidebar();
+      } else {
+        closeSidebar();
+      }
+    }
+  };
+
+  mobileMenuBtn?.addEventListener('click', toggleSidebar);
+  toggleSidebarBtn?.addEventListener('click', closeSidebar);
+  sidebarOverlayEl?.addEventListener('click', closeSidebar);
 
   // Pastki input baridagi tezkor mikrofon (Voice Modalni ochadi)
   quickVoiceInputBtn?.addEventListener('click', () => {
