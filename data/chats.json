@@ -1,9 +1,83 @@
 [
   {
+    "id": "chat_1788964368399_d5ycm",
+    "title": "bugun soat 19:34 da meni oygatao...",
+    "createdAt": "2026-09-09T14:32:48.399Z",
+    "updatedAt": "2026-09-09T14:33:55.078Z",
+    "messages": [
+      {
+        "id": "msg_1788964402687",
+        "role": "user",
+        "content": "bugun soat 19:34 da meni oygataolasanmi budinlik qoyib quy shunga",
+        "image": null,
+        "timestamp": "2026-09-09T14:33:22.687Z"
+      },
+      {
+        "id": "msg_1788964435078_ai",
+        "role": "assistant",
+        "content": "Salom, Do‘stim! Afsuski, men to'g'ridan-to'g'ri budilnik qo'yib bera olmayman, lekin iloji boricha foydali tavsiya bera olaman. Telefoningiz yoki kompyuteringizda budilnik qo'yish uchun quyidagilardan foydalanishingiz mumkin:\n\n**Telefon:** \n- iOS: Soat ilovasini ochib, \"+\" tugmasini bosib, vaqtingizni (19:34) tanlang.\n- Android: Soat ilovasiga kirib, \"Budilnik qo'shish\" tugmasini bosib, kerakli vaqtni kiriting.\n\n**Kompyuter:** \n- Windows 10: \"Alarms & Clock\" ilovasini ochib, \"Add an alarm\" tugmasini bosing va vaqtni kiritib saqlang.\n- macOS: \"Calendar\" ilovasini ochib, kerakli vaqtga eslatma yarating.\n\nShunday qilib, siz 19:34 da budilnik qo'yishingiz mumkin. Agar qo'shimcha yordam kerak bo'lsa, bemalol so'rang!",
+        "timestamp": "2026-09-09T14:33:55.078Z"
+      }
+    ]
+  },
+  {
     "id": "chat_1788961714304_96p2c",
-    "title": "Birinchi sinov suhbati",
+    "title": "elchixona uchun",
     "createdAt": "2026-09-09T13:48:34.304Z",
-    "updatedAt": "2026-09-09T13:48:34.304Z",
-    "messages": []
+    "updatedAt": "2026-09-09T14:31:52.383Z",
+    "messages": [
+      {
+        "id": "msg_1788963818998",
+        "role": "user",
+        "content": "elchixona uchun",
+        "image": null,
+        "timestamp": "2026-09-09T14:23:38.998Z"
+      },
+      {
+        "id": "msg_1788963822616_ai",
+        "role": "assistant",
+        "content": "Salom, Do‘stim! Elchixonaga oid biror savol yoki ma'lumot kerakmi? Qanday yordam bera olaman?",
+        "timestamp": "2026-09-09T14:23:42.616Z"
+      },
+      {
+        "id": "msg_1788963822986",
+        "role": "user",
+        "content": "salom",
+        "image": null,
+        "timestamp": "2026-09-09T14:23:42.986Z"
+      },
+      {
+        "id": "msg_1788963824636_ai",
+        "role": "assistant",
+        "content": "Va alaykum assalom, Do‘stim! Qandaysan? Bugun qanday yordam bera olaman?",
+        "timestamp": "2026-09-09T14:23:44.636Z"
+      },
+      {
+        "id": "msg_1788964178439",
+        "role": "user",
+        "content": "nima yangiliklar",
+        "image": null,
+        "timestamp": "2026-09-09T14:29:38.439Z"
+      },
+      {
+        "id": "msg_1788964189024_ai",
+        "role": "assistant",
+        "content": "Hammavaqtgiday, dunyo texnologiya va dasturlash sohasida qizg'in o'zgarishlar va yangiliklarga to‘la. Masalan, JavaScript-ning yangi xususiyatlari, AI va mashina o'rganish (machine learning) sohasidagi yutuqlar yoki yangi dasturlash kutubxonalari chiqqan bo'lishi mumkin. \n\nAgar ma'lum bir mavzuda yangiliklar qiziqtirsa, aytsang, o'sha bo'yicha so'nggi ma'lumotlarni taqdim etishga harakat qilaman. Yoki sening qaysidir loyihangda yordam kerak bo'lsa, shu haqida gaplashsa ham bo'ladi.",
+        "timestamp": "2026-09-09T14:29:49.024Z"
+      },
+      {
+        "id": "msg_1788964280910",
+        "role": "user",
+        "content": "biron bir html kod yozib ber",
+        "image": null,
+        "timestamp": "2026-09-09T14:31:20.910Z"
+      },
+      {
+        "id": "msg_1788964312383_ai",
+        "role": "assistant",
+        "content": "Albatta, Do‘stim! HTML haqida qaysi mavzuda kod kerakligini ayt, lekin men boshlang'ich darajadagi oddiy bir HTML sahifa kodini yozib beraman. Masalan, oddiy veb sahifa tuzamiz:\n\n```html\n<!DOCTYPE html>\n<html lang=\"uz\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Mening Sahifam</title>\n    <style>\n        body {\n            font-family: Arial, sans-serif;\n            margin: 0;\n            padding: 0;\n            background-color: #f4f4f9;\n        }\n        header {\n            background-color: #333;\n            color: #fff;\n            text-align: center;\n            padding: 1rem 0;\n        }\n        main {\n            padding: 2rem;\n        }\n    </style>\n</head>\n<body>\n    <header>\n        <h1>Xush kelibsiz!</h1>\n    </header>\n    <main>\n        <p>Bu oddiy HTML sahifa misoli. Bu yerda siz matn, rasmlar va boshqa elementlarni qo'shishingiz mumkin.</p>\n    </main>\n</body>\n</html>\n```\n\nBu kod oddiy bir HTML sahifa yaratadi. U yerda bosh qism (header) va asosiy qism (main) mavjud bo'lib, ular CSS bilan ozgina bezatilgan. Agar loyihangda maxsus bir narsa kerak bo'lsa, aytgin, shunga moslab kod yozaman.",
+        "timestamp": "2026-09-09T14:31:52.383Z"
+      }
+    ]
   }
 ]

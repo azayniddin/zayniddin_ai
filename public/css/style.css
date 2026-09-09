@@ -1319,17 +1319,45 @@ canvas#voiceCanvas {
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  z-index: 40;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 45;
   opacity: 0;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
   transition: opacity 0.25s ease;
 }
 
 .sidebar-overlay.active {
   display: block;
   opacity: 1;
+}
+
+.mobile-close-sidebar-btn {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  min-height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #fff;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  z-index: 60;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+
+.mobile-close-sidebar-btn:active {
+  background: rgba(255, 255, 255, 0.25);
+  transform: scale(0.92);
 }
 
 .mobile-quick-voice-btn {
@@ -1356,18 +1384,21 @@ canvas#voiceCanvas {
     top: 0;
     left: 0;
     bottom: 0;
-    width: 82%;
+    width: 84%;
     max-width: 320px;
     height: 100dvh;
     z-index: 50;
+    margin-left: 0 !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
     transform: translateX(-100%);
     box-shadow: 10px 0 30px rgba(0, 0, 0, 0.8);
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    background: rgba(12, 14, 22, 0.98);
+    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    background: rgba(10, 12, 20, 0.98);
   }
 
   .sidebar.mobile-open {
-    transform: translateX(0);
+    transform: translateX(0) !important;
   }
 
   .sidebar-header {

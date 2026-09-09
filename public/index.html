@@ -35,7 +35,7 @@
 <body>
 
   <!-- Mobile Backdrop Overlay for Sidebar -->
-  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="window.closeAppSidebar &amp;&amp; window.closeAppSidebar()"></div>
 
   <div class="app-container">
     
@@ -51,8 +51,8 @@
             <span>Shaxsiy Intellekt</span>
           </div>
         </div>
-        <button class="icon-button" id="toggleSidebarBtn" title="Panelni yopish">
-          <i data-lucide="panel-left-close" style="width: 20px; height: 20px;"></i>
+        <button class="icon-button mobile-close-sidebar-btn" id="toggleSidebarBtn" title="Panelni yopish" onclick="window.closeAppSidebar &amp;&amp; window.closeAppSidebar()">
+          <i data-lucide="x" style="width: 22px; height: 22px;"></i>
         </button>
       </div>
 
@@ -101,7 +101,7 @@
       <header class="top-nav glass">
         <!-- Burger menu button on Mobile -->
         <div style="display: flex; align-items: center; gap: 10px;">
-          <button class="icon-button sidebar-toggle-btn" id="mobileMenuBtn" title="Panelni ochish/yopish">
+          <button class="icon-button sidebar-toggle-btn" id="mobileMenuBtn" title="Panelni ochish/yopish" onclick="window.toggleAppSidebar &amp;&amp; window.toggleAppSidebar()">
             <i data-lucide="panel-left" style="width: 20px; height: 20px;"></i>
           </button>
           <div class="current-chat-details">

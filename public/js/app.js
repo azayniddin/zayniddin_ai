@@ -568,50 +568,87 @@ function setupEventListeners() {
   const toggleSidebarBtn = document.getElementById('toggleSidebarBtn');
   const quickVoiceInputBtn = document.getElementById('quickVoiceInputBtn');
 
-  // Saqlangan holatni tiklash
-  if (window.innerWidth > 768 && localStorage.getItem('sidebar_desktop_collapsed') === 'true') {
-    sidebarEl?.classList.add('collapsed');
-  }
-
-  const closeSidebar = () => {
-    if (window.innerWidth <= 768) {
-      sidebarEl?.classList.remove('mobile-open');
-      sidebarOverlayEl?.classList.remove('active');
-    } else {
+  // Global funksiyalar (inline onclick va barcha hodisalar uchun)
+  window.closeAppSidebar = () => {
+    sidebarEl?.classList.remove('mobile-open');
+    sidebarOverlayEl?.classList.remove('active');
+    if (window.innerWidth > 768) {
       sidebarEl?.classList.add('collapsed');
       localStorage.setItem('sidebar_desktop_collapsed', 'true');
+    } else {
+      sidebarEl?.classList.remove('collapsed');
     }
   };
 
-  const openSidebar = () => {
+  window.openAppSidebar = () => {
+    sidebarEl?.classList.remove('collapsed');
     if (window.innerWidth <= 768) {
       sidebarEl?.classList.add('mobile-open');
       sidebarOverlayEl?.classList.add('active');
     } else {
-      sidebarEl?.classList.remove('collapsed');
       localStorage.setItem('sidebar_desktop_collapsed', 'false');
     }
   };
 
-  const toggleSidebar = () => {
-    if (window.innerWidth <= 768) {
-      if (sidebarEl?.classList.contains('mobile-open')) {
-        closeSidebar();
-      } else {
-        openSidebar();
-      }
+  window.toggleAppSidebar = () => {
+    if (sidebarEl?.classList.contains('mobile-open')) {
+      window.closeAppSidebar();
+    } else if (sidebarEl?.classList.contains('collapsed')) {
+      window.openAppSidebar();
+    } else if (window.innerWidth <= 768) {
+      window.openAppSidebar();
     } else {
-      if (sidebarEl?.classList.contains('collapsed')) {
-        openSidebar();
-      } else {
-        closeSidebar();
-      }
+      window.closeAppSidebar();
     }
   };
 
-  mobileMenuBtn?.addEventListener('click', toggleSidebar);
-  toggleSidebarBtn?.addEventListener('click', closeSidebar);
-  sidebarOverlayEl?.addEventListener('click', closeSidebar);
+  // Saqlangan desktop holatini tiklash
+  if (window.innerWidth > 768 && localStorage.getItem('sidebar_desktop_collapsed') === 'true') {
+    sidebarEl?.classList.add('collapsed');
+  }
+
+  // Click va Touch hodisalari (Mobilda to'g'ri ishlashi uchun touchend/click)
+  mobileMenuBtn?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    window.toggleAppSidebar();
+  });
+  toggleSidebarBtn?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    window.closeAppSidebar();
+  });
+  toggleSidebarBtn?.addEventListener('touchend', (e) => {
+    e.stopPropagation();
+    window.closeAppSidebar();
+  });
+  sidebarOverlayEl?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    window.closeAppSidebar();
+  });
+  sidebarOverlayEl?.addEventListener('touchend', (e) => {
+    e.stopPropagation();
+    window.closeAppSidebar();
+  });
+
+  // Mobilda barmoq bilan chapga surib yopish (Swipe to Close)
+  let touchStartX = 0;
+  let touchStartY = 0;
+
+  sidebarEl?.addEventListener('touchstart', (e) => {
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+  }, { passive: true });
+
+  sidebarEl?.addEventListener('touchend', (e) => {
+    const touchEndX = e.changedTouches[0].clientX;
+    const touchEndY = e.changedTouches[0].clientY;
+    const diffX = touchStartX - touchEndX;
+    const diffY = Math.abs(touchStartY - touchEndY);
+
+    // Gorizontal chapga surish > 45px bo'lsa
+    if (diffX > 45 && diffY < 90) {
+      window.closeAppSidebar();
+    }
+  }, { passive: true });
 
   // Pastki input baridagi tezkor mikrofon (Voice Modalni ochadi)
   quickVoiceInputBtn?.addEventListener('click', () => {
