@@ -52,19 +52,55 @@ class ScreenVisionController {
       }
     });
 
-    // Input maydonidagi kamera tugmasi (tezkor snapshot)
+    // Input maydonidagi kamera tugmasi (tezkor snapshot yoki rasm yuklash)
+    const mobileFileInput = document.getElementById('mobileImageUploadInput');
+    
+    // Foydalanuvchi fayl/rasm tanlaganda
+    mobileFileInput?.addEventListener('change', (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const base64Image = event.target.result;
+        this.attachSnapshotToInput(base64Image);
+      };
+      reader.readAsDataURL(file);
+    });
+
     this.directCaptureBtn?.addEventListener('click', async () => {
-      if (!this.mediaStream) {
-        const started = await this.startScreenShare();
-        if (!started) return;
-        // Kichik kutish video oqimi barqarorlashishi uchun
-        setTimeout(() => {
+      // Agar mobil qurilma bo'lsa yoki ekran ulashish mavjud bo'lmasa, to'g'ridan-to'g'ri fayl/kamera tanlashni ochamiz
+      const isMobile = window.innerWidth <= 768 || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      
+      if (isMobile) {
+        mobileFileInput?.click();
+      } else {
+        if (!this.mediaStream) {
+          const started = await this.startScreenShare();
+          if (!started) return;
+          setTimeout(() => {
+            const snap = this.captureSnapshot();
+            if (snap) this.attachSnapshotToInput(snap);
+          }, 500);
+        } else {
           const snap = this.captureSnapshot();
           if (snap) this.attachSnapshotToInput(snap);
-        }, 500);
+        }
+      }
+    });
+
+    // Navbardagi "Ko'rish" tugmasi ham mobilda rasm/kamera yuklashni taklif qiladi
+    this.visionBtn?.addEventListener('click', () => {
+      const isMobile = window.innerWidth <= 768 || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      if (isMobile && !navigator.mediaDevices?.getDisplayMedia) {
+        mobileFileInput?.click();
+        return;
+      }
+
+      if (this.mediaStream) {
+        this.stopScreenShare();
       } else {
-        const snap = this.captureSnapshot();
-        if (snap) this.attachSnapshotToInput(snap);
+        this.startScreenShare();
       }
     });
 

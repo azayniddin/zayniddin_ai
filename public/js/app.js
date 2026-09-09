@@ -153,6 +153,10 @@ async function selectChat(chatId) {
   window.appState.activeChatId = chatId;
   renderChatsList();
 
+  // Mobilda sidebar ochiq bo'lsa uni yopish
+  document.getElementById('sidebar')?.classList.remove('mobile-open');
+  document.getElementById('sidebarOverlay')?.classList.remove('active');
+
   try {
     const res = await fetch(`/api/chats/${chatId}`);
     if (res.ok) {
@@ -516,6 +520,34 @@ function setupEventListeners() {
       }
     } catch (err) {
       alert('Sozlamalarni saqlashda xatolik: ' + err.message);
+    }
+  });
+
+  // ================= Mobil Menyu Boshqaruvi =================
+  const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+  const sidebarEl = document.getElementById('sidebar');
+  const sidebarOverlayEl = document.getElementById('sidebarOverlay');
+  const toggleSidebarBtn = document.getElementById('toggleSidebarBtn');
+  const quickVoiceInputBtn = document.getElementById('quickVoiceInputBtn');
+
+  const openMobileSidebar = () => {
+    sidebarEl?.classList.add('mobile-open');
+    sidebarOverlayEl?.classList.add('active');
+  };
+
+  const closeMobileSidebar = () => {
+    sidebarEl?.classList.remove('mobile-open');
+    sidebarOverlayEl?.classList.remove('active');
+  };
+
+  mobileMenuBtn?.addEventListener('click', openMobileSidebar);
+  toggleSidebarBtn?.addEventListener('click', closeMobileSidebar);
+  sidebarOverlayEl?.addEventListener('click', closeMobileSidebar);
+
+  // Pastki input baridagi tezkor mikrofon (Voice Modalni ochadi)
+  quickVoiceInputBtn?.addEventListener('click', () => {
+    if (window.voiceOrb) {
+      window.voiceOrb.openModal();
     }
   });
 

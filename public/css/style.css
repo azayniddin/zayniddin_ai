@@ -997,3 +997,259 @@ canvas#voiceCanvas {
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.25);
 }
+
+/* ===================================================
+   📱 MOBILE RESPONSIVE DESIGN & TOUCH OPTIMIZATIONS
+   =================================================== */
+
+.mobile-menu-btn {
+  display: none;
+}
+
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 40;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.sidebar-overlay.active {
+  display: block;
+  opacity: 1;
+}
+
+.mobile-quick-voice-btn {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  /* Container & Layout */
+  .app-container {
+    height: 100dvh;
+    width: 100vw;
+    overflow: hidden;
+  }
+
+  body {
+    height: 100dvh;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Mobile Drawer Sidebar */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 82%;
+    max-width: 320px;
+    height: 100dvh;
+    z-index: 50;
+    transform: translateX(-100%);
+    box-shadow: 10px 0 30px rgba(0, 0, 0, 0.8);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    background: rgba(12, 14, 22, 0.98);
+  }
+
+  .sidebar.mobile-open {
+    transform: translateX(0);
+  }
+
+  .sidebar-header {
+    padding: 16px 14px;
+  }
+
+  .new-chat-btn {
+    margin: 12px 14px 8px;
+    padding: 12px 16px;
+    font-size: 0.92rem;
+  }
+
+  .chat-history-item {
+    padding: 12px 14px;
+    font-size: 0.9rem;
+  }
+
+  .sidebar-footer {
+    padding-bottom: calc(14px + env(safe-area-inset-bottom));
+  }
+
+  /* Main Chat Area */
+  .chat-main {
+    width: 100vw;
+    height: 100dvh;
+  }
+
+  .mobile-menu-btn {
+    display: flex;
+    width: 38px;
+    height: 38px;
+  }
+
+  .top-nav {
+    height: 60px;
+    padding: 0 12px;
+  }
+
+  .current-chat-details h2 {
+    font-size: 0.92rem;
+    max-width: 140px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .action-pill-group {
+    gap: 6px;
+  }
+
+  .pill-btn {
+    padding: 7px 10px;
+    font-size: 0.76rem;
+  }
+
+  .desktop-only-text {
+    display: none;
+  }
+
+  /* Messages Area */
+  .messages-container {
+    padding: 14px 12px;
+    gap: 14px;
+  }
+
+  .message-row {
+    gap: 10px;
+  }
+
+  .msg-avatar {
+    width: 32px;
+    height: 32px;
+  }
+
+  .msg-bubble {
+    max-width: 90%;
+    padding: 12px 14px;
+    font-size: 0.9rem;
+  }
+
+  /* Welcome Hero Mobilda */
+  .welcome-hero {
+    padding: 20px 10px;
+  }
+
+  .welcome-avatar {
+    width: 54px;
+    height: 54px;
+    border-radius: 16px;
+    margin-bottom: 14px;
+  }
+
+  .welcome-hero h2 {
+    font-size: 1.35rem;
+  }
+
+  .welcome-hero p {
+    font-size: 0.85rem;
+    margin-bottom: 18px;
+  }
+
+  .quick-prompts {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .prompt-card {
+    padding: 10px 12px;
+  }
+
+  .prompt-card h4 {
+    font-size: 0.82rem;
+  }
+
+  .prompt-card p {
+    font-size: 0.74rem;
+  }
+
+  /* Chat Input Area (Klaviatura va Safe Area bilan mos) */
+  .chat-input-area {
+    padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
+    background: rgba(9, 10, 15, 0.96);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+
+  .input-box-wrapper {
+    padding: 6px 8px;
+    border-radius: 14px;
+  }
+
+  textarea#messageInput {
+    font-size: 16px; /* iOS Safari avtomatik zoom qilishining oldini oladi */
+    padding: 6px 4px;
+    min-height: 38px;
+    max-height: 120px;
+  }
+
+  .mobile-quick-voice-btn {
+    display: flex;
+  }
+
+  .send-btn {
+    width: 36px;
+    height: 36px;
+  }
+
+  .icon-button {
+    width: 36px;
+    height: 36px;
+  }
+
+  /* Voice Modal Mobilda */
+  .voice-orb-container {
+    width: 250px;
+    height: 250px;
+  }
+
+  canvas#voiceCanvas {
+    width: 240px;
+    height: 240px;
+  }
+
+  .voice-status-badge {
+    font-size: 1rem;
+    margin-top: 20px;
+  }
+
+  .voice-transcript-box {
+    margin: 14px 16px 0;
+    font-size: 0.88rem;
+    max-height: 120px;
+    overflow-y: auto;
+  }
+
+  .voice-control-btn {
+    width: 60px;
+    height: 60px;
+  }
+
+  /* Floating Screen PiP on mobile */
+  .screen-pip-panel {
+    top: 66px;
+    right: 10px;
+    left: 10px;
+    width: auto;
+  }
+
+  /* Settings Modal Mobilda */
+  .settings-card {
+    width: 95%;
+    padding: 20px 18px;
+  }
+}
