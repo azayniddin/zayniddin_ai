@@ -1415,20 +1415,23 @@ canvas#voiceCanvas {
   box-shadow: 0 0 20px rgba(244, 63, 94, 0.5);
 }
 
-/* Settings Modal */
-.modal-backdrop {
+/* Modals & Backdrops */
+.modal-backdrop,
+.settings-modal {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(8px);
-  z-index: 90;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 1000;
   display: none;
   align-items: center;
   justify-content: center;
 }
 
-.modal-backdrop.active {
-  display: flex;
+.modal-backdrop.active,
+.settings-modal.active {
+  display: flex !important;
 }
 
 .settings-card {
@@ -1448,6 +1451,7 @@ canvas#voiceCanvas {
 .settings-header h3 {
   font-size: 1.2rem;
   font-weight: 700;
+}
 .server-key-badge {
   display: flex;
   align-items: center;
