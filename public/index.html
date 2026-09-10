@@ -122,6 +122,12 @@
             <span id="visionBtnText" class="desktop-only-text">Ko‘rish</span>
           </button>
 
+          <!-- AI Image Generator Button -->
+          <button class="pill-btn draw-btn" id="openDrawModalBtn" title="AI Bilan Rasm Chizish">
+            <i data-lucide="palette" style="width: 16px; height: 16px;"></i>
+            <span class="desktop-only-text">Rasm</span>
+          </button>
+
           <!-- Voice Mode Button -->
           <button class="pill-btn voice-btn" id="openVoiceModalBtn" title="Jonli Ovozli Suhbat">
             <i data-lucide="mic" style="width: 16px; height: 16px;"></i>
@@ -347,8 +353,81 @@
     </div>
   </div>
 
+  <!-- AI IMAGE GENERATION (DALL-E / FLUX) MODAL -->
+  <div class="settings-modal" id="drawModal">
+    <div class="settings-card glass-card">
+      <div class="settings-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div class="draw-modal-icon-badge">
+            <i data-lucide="palette" style="width: 20px; height: 20px; color: #ec4899;"></i>
+          </div>
+          <h3>AI Bilan Rasm Chizish</h3>
+        </div>
+        <button class="icon-button" id="closeDrawModalBtn">
+          <i data-lucide="x" style="width: 18px; height: 18px;"></i>
+        </button>
+      </div>
+
+      <div class="settings-body">
+        <div class="setting-group">
+          <label for="drawPromptInput">Nima rasm chizish kerak? (Tavsif)</label>
+          <textarea id="drawPromptInput" rows="3" placeholder="Masalan: Tungi ko'chada yomg'ir ostida turgan neonli sportkar, kiberpunk uslubida..."></textarea>
+        </div>
+
+        <div class="setting-group">
+          <label>San'at Uslubi (Style)</label>
+          <div class="draw-chips-group">
+            <button type="button" class="draw-style-chip active" data-style="Fotorealistik">📸 Fotorealizm</button>
+            <button type="button" class="draw-style-chip" data-style="3D Disney Pixar Render">🎬 3D Render</button>
+            <button type="button" class="draw-style-chip" data-style="Cyberpunk Neon Sci-Fi">🌌 Kiberpunk</button>
+            <button type="button" class="draw-style-chip" data-style="Anime Makoto Shinkai Style">✨ Anime</button>
+            <button type="button" class="draw-style-chip" data-style="Watercolor Painting Art">🖌️ Akvarel</button>
+            <button type="button" class="draw-style-chip" data-style="Concept Art Fantasy">🏰 Fantastika</button>
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <label>Tasvir O'lchami (Nisbat)</label>
+          <div class="draw-chips-group">
+            <button type="button" class="draw-ratio-chip active" data-ratio="1:1">1:1 (Kvadrat)</button>
+            <button type="button" class="draw-ratio-chip" data-ratio="16:9">16:9 (Keng ekran)</button>
+            <button type="button" class="draw-ratio-chip" data-ratio="9:16">9:16 (Telefon Fon)</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-footer">
+        <button class="btn-secondary" id="cancelDrawBtn">Bekor qilish</button>
+        <button class="btn-primary draw-submit-btn" id="submitDrawBtn">
+          <i data-lucide="sparkles" style="width: 16px; height: 16px;"></i>
+          <span>Rasm Chizish</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FULLSCREEN IMAGE LIGHTBOX -->
+  <div class="image-lightbox-modal" id="imageLightbox">
+    <div class="lightbox-content">
+      <button class="lightbox-close-btn" id="closeLightboxBtn" title="Yopish">
+        <i data-lucide="x" style="width: 24px; height: 24px;"></i>
+      </button>
+      <div class="lightbox-image-wrapper">
+        <img src="" alt="AI Art" id="lightboxImg" class="lightbox-img" />
+      </div>
+      <div class="lightbox-footer">
+        <div class="lightbox-title" id="lightboxTitle">AI Tasvir</div>
+        <button class="btn-primary lightbox-dl-btn" id="lightboxDownloadBtn">
+          <i data-lucide="download" style="width: 16px; height: 16px;"></i>
+          <span>Telefonga Yuklab Olish</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- APP SCRIPTS (v3.0) -->
   <script src="/js/reminders.js?v=3.0"></script>
+  <script src="/js/artGenerator.js?v=3.0"></script>
   <script src="/js/voiceOrb.js?v=3.0"></script>
   <script src="/js/screenVision.js?v=3.0"></script>
   <script src="/js/app.js?v=3.0"></script>

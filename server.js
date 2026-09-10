@@ -4,7 +4,8 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs/promises';
-import { existsSync, mkdirSync } from 'fs';
+import { existsSync, mkdirSync, createWriteStream } from 'fs';
+import https from 'https';
 import OpenAI from 'openai';
 
 dotenv.config();
@@ -126,6 +127,89 @@ ASOSIY QOIDALAR VA FAZILATLARING:
    - Maxsus istaklari: ${profile.customRules}
 
 Doimo qotmasdan, aniq, mantiqiy va maksimal darajada foydali javob ber!`;
+}
+
+// ================= AI Tasvir Yaratish (Image Generation) Yordamchilari =================
+
+function isImageRequest(text) {
+  if (!text) return false;
+  const t = text.toLowerCase().trim();
+  if (t.includes('qanday chiziladi') || t.includes('chizishni o\'rganish')) return false;
+
+  const patterns = [
+    /rasm\s*(chiz|yarat|qil|chiqar)/i,
+    /chizib\s*ber/i,
+    /rasmini\s*chiz/i,
+    /surat\s*(chiz|yarat)/i,
+    /tasvirlab\s*ber/i,
+    /generate\s*(an?\s*)?image/i,
+    /draw\s*(an?\s*)?(picture|image|photo)/i,
+    /paint\s*(an?\s*)?(picture|image)/i,
+    /illyustratsiya\s*(chiz|yarat)/i,
+    /bitta\s*rasm\s*chiz/i,
+    /tasvir\s*(chiz|yarat)/i
+  ];
+  return patterns.some(p => p.test(t));
+}
+
+async function enrichImagePrompt(openai, userPrompt, style = '') {
+  try {
+    const styleInstruction = style ? `Artistic style: ${style}.` : '';
+    const res = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are an expert master AI prompt engineer for high-end digital art (FLUX.1). Convert the user prompt (which may be in Uzbek) into an ultra-detailed, photorealistic, cinematic English prompt with vibrant lighting, textures, 8k resolution details, and artistic composition. Output ONLY the English prompt, no other text.'
+        },
+        {
+          role: 'user',
+          content: `${userPrompt}. ${styleInstruction}`
+        }
+      ],
+      max_tokens: 300,
+      temperature: 0.7
+    });
+    return res.choices[0]?.message?.content?.trim() || userPrompt;
+  } catch (err) {
+    console.warn('Prompt enrichment error:', err);
+    return userPrompt;
+  }
+}
+
+async function generateImageWithFlux(enhancedPrompt, width = 1024, height = 1024) {
+  const seed = Math.floor(Math.random() * 10000000);
+  const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(enhancedPrompt)}?width=${width}&height=${height}&seed=${seed}&nologo=true&model=flux`;
+
+  const filename = `ai_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.jpg`;
+  const uploadDir = path.join(__dirname, 'public', 'uploads', 'generated');
+  if (!existsSync(uploadDir)) {
+    await fs.mkdir(uploadDir, { recursive: true });
+  }
+  const filePath = path.join(uploadDir, filename);
+
+  return new Promise((resolve, reject) => {
+    const file = createWriteStream(filePath);
+    
+    function makeRequest(targetUrl) {
+      https.get(targetUrl, (response) => {
+        if (response.statusCode >= 300 && response.statusCode < 400 && response.headers.location) {
+          makeRequest(response.headers.location);
+        } else if (response.statusCode === 200) {
+          response.pipe(file);
+          file.on('finish', () => {
+            file.close(() => resolve(`/uploads/generated/${filename}`));
+          });
+        } else {
+          reject(new Error(`Tasvir yaratishda server javobi: ${response.statusCode}`));
+        }
+      }).on('error', (err) => {
+        reject(err);
+      });
+    }
+
+    makeRequest(imageUrl);
+  });
 }
 
 // ================= API ROUTES =================
@@ -300,6 +384,42 @@ app.post('/api/chats/:id/messages', async (req, res) => {
       ...recentMessages
     ];
 
+    // 1. Agar foydalanuvchi rasm chizishni so'ragan bo'lsa
+    if (content && isImageRequest(content)) {
+      res.write(`data: ${JSON.stringify({ chunk: `🎨 **Siz so‘ragan tasvir yaratilmoqda...**\n\nAI tasvir g‘oyasini ishlab chiqmoqda va chizmoqda, bir necha soniya kuting...\n\n` })}\n\n`);
+
+      try {
+        const enhancedPrompt = await enrichImagePrompt(openai, content);
+        const imageUrl = await generateImageWithFlux(enhancedPrompt, 1024, 1024);
+
+        const cardData = JSON.stringify({
+          imageUrl,
+          prompt: content,
+          enhancedPrompt
+        });
+
+        const imageChunk = `Mana, siz so‘ragan mukammal tasvir tayyor bo‘ldi!\n\n![${content}](${imageUrl})\n\n:::image-card\n${cardData}\n:::\n\n*Tasvir FLUX.1 AI modeli orqali 1024x1024 HD sifatda chizildi.*`;
+        
+        res.write(`data: ${JSON.stringify({ chunk: imageChunk })}\n\n`);
+
+        const assistantMsgObj = {
+          id: 'msg_' + Date.now() + '_ai',
+          role: 'assistant',
+          content: imageChunk,
+          timestamp: new Date().toISOString()
+        };
+        chat.messages.push(assistantMsgObj);
+        chat.updatedAt = new Date().toISOString();
+        await saveChatsData(chats);
+
+        res.write(`data: ${JSON.stringify({ done: true, messageId: assistantMsgObj.id })}\n\n`);
+        return res.end();
+      } catch (imgErr) {
+        console.error('Tasvir chizishda xatolik:', imgErr);
+        res.write(`data: ${JSON.stringify({ chunk: `\n\n*(Tasvir yaratishda vaqtinchalik uzilish: ${imgErr.message}. Odatiy javobga o'tilmoqda...)*\n\n` })}\n\n`);
+      }
+    }
+
     const stream = await openai.chat.completions.create({
       model: 'gpt-4o',
       messages: messagesToSend,
@@ -335,6 +455,55 @@ app.post('/api/chats/:id/messages', async (req, res) => {
     console.error('OpenAI Stream Xatosi:', err);
     res.write(`data: ${JSON.stringify({ error: err.message || 'AI javob berishda xatolik yuz berdi' })}\n\n`);
     res.end();
+  }
+});
+
+// To'g'ridan-to'g'ri Rasm Chizish API (Modal va Quick Tool uchun)
+app.post('/api/generate-image', async (req, res) => {
+  const openai = getOpenAIClient(req);
+  if (!openai) {
+    return res.status(401).json({ error: 'OpenAI API kaliti topilmadi' });
+  }
+
+  const { prompt, style, aspectRatio = '1:1', chatId } = req.body;
+  if (!prompt) {
+    return res.status(400).json({ error: 'Rasm tavsifi (prompt) kiritilmagan' });
+  }
+
+  try {
+    let width = 1024, height = 1024;
+    if (aspectRatio === '16:9') { width = 1024; height = 576; }
+    else if (aspectRatio === '9:16') { width = 576; height = 1024; }
+
+    const enhancedPrompt = await enrichImagePrompt(openai, prompt, style);
+    const imageUrl = await generateImageWithFlux(enhancedPrompt, width, height);
+
+    if (chatId) {
+      const chats = await getChatsData();
+      const chat = chats.find(c => c.id === chatId);
+      if (chat) {
+        chat.messages.push({
+          id: 'msg_' + Date.now(),
+          role: 'user',
+          content: `🎨 Rasm: ${prompt} (${style || 'Standard'})`,
+          timestamp: new Date().toISOString()
+        });
+        const cardData = JSON.stringify({ imageUrl, prompt, enhancedPrompt });
+        chat.messages.push({
+          id: 'msg_' + Date.now() + '_ai',
+          role: 'assistant',
+          content: `Mana, siz so‘ragan mukammal tasvir!\n\n![${prompt}](${imageUrl})\n\n:::image-card\n${cardData}\n:::\n\n*Tasvir FLUX.1 modeli orqali HD sifatda chizildi.*`,
+          timestamp: new Date().toISOString()
+        });
+        chat.updatedAt = new Date().toISOString();
+        await saveChatsData(chats);
+      }
+    }
+
+    res.json({ success: true, imageUrl, prompt, enhancedPrompt });
+  } catch (err) {
+    console.error('Tasvir yaratishda xatolik:', err);
+    res.status(500).json({ error: err.message });
   }
 });
 

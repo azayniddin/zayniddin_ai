@@ -364,6 +364,9 @@ function appendMessageToUI(msg) {
     if (window.deviceReminder) {
       rawContent = window.deviceReminder.parseReminders(rawContent);
     }
+    if (window.artGenerator) {
+      rawContent = window.artGenerator.parseImageCards(rawContent);
+    }
     formattedContent = marked.parse(rawContent);
   } else {
     // Xavfsiz user matni
@@ -555,6 +558,9 @@ async function sendMessage(customContent = null, customImage = null) {
               let contentToRender = accumulatedText;
               if (window.deviceReminder) {
                 contentToRender = window.deviceReminder.parseReminders(contentToRender);
+              }
+              if (window.artGenerator) {
+                contentToRender = window.artGenerator.parseImageCards(contentToRender);
               }
               markdownBody.innerHTML = marked.parse(contentToRender);
               setupCodeBlocks(aiRow);
