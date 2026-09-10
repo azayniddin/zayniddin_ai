@@ -1,6 +1,6 @@
 /**
- * zayniddin_ai - Siri Style Voice & Wave Orb Controller
- * iOS 18 Siri uslubidagi ko'p qatlamli, neon nurlanuvchi va ovozga sezgir to'lqin animatsiyasi
+ * zayniddin_ai - Siri Style Voice & Wave Orb Controller (Compact 3D Panel)
+ * iOS 18 Siri uslubidagi ko'p qatlamli neon nurlanuvchi to'lqin animatsiyasi va tiniq o'zbekcha ovoz
  */
 
 class VoiceOrbController {
@@ -12,6 +12,8 @@ class VoiceOrbController {
     this.transcriptBox = document.getElementById('voiceTranscriptBox');
     this.micToggleBtn = document.getElementById('voiceMicToggleBtn');
     this.stopSpeechBtn = document.getElementById('voiceStopSpeechBtn');
+    this.quickInput = document.getElementById('siriQuickInput');
+    this.quickSendBtn = document.getElementById('siriSendQuickBtn');
 
     this.isListening = false;
     this.isSpeaking = false;
@@ -22,6 +24,9 @@ class VoiceOrbController {
     this.micStream = null;
     this.dataArray = null;
     this.animationFrameId = null;
+    this.currentAudio = null;
+    this.silenceTimer = null;
+    this.lastRecognizedText = '';
 
     // Siri Wave Parameters
     this.phase = 0;
@@ -29,19 +34,17 @@ class VoiceOrbController {
     this.targetIntensity = 0.2;
     this.audioLevel = 0;
 
-    // Siri Wave Configuration (Layers of chromatic harmonic waves)
+    // Harmonic chromatic wave layers
     this.waves = [
-      { color: 'rgba(6, 182, 212, 0.75)', freq: 2.5, speed: 0.05, ampMult: 1.0, width: 3.5 },   // Cyan
-      { color: 'rgba(59, 130, 246, 0.8)', freq: 3.2, speed: -0.04, ampMult: 0.85, width: 3.0 },  // Electric Blue
-      { color: 'rgba(168, 85, 247, 0.8)', freq: 2.0, speed: 0.06, ampMult: 0.9, width: 3.5 },   // Neon Purple
-      { color: 'rgba(236, 72, 153, 0.85)', freq: 3.8, speed: -0.05, ampMult: 0.75, width: 2.8 }, // Hot Magenta
-      { color: 'rgba(255, 255, 255, 0.9)', freq: 4.5, speed: 0.07, ampMult: 0.5, width: 2.0 }   // White / Core Glow
+      { color: 'rgba(6, 182, 212, 0.85)', freq: 2.5, speed: 0.05, ampMult: 1.0, width: 3.0 },   // Cyan
+      { color: 'rgba(59, 130, 246, 0.9)', freq: 3.2, speed: -0.04, ampMult: 0.85, width: 2.8 },  // Electric Blue
+      { color: 'rgba(168, 85, 247, 0.9)', freq: 2.0, speed: 0.06, ampMult: 0.9, width: 3.0 },   // Neon Purple
+      { color: 'rgba(236, 72, 153, 0.9)', freq: 3.8, speed: -0.05, ampMult: 0.75, width: 2.4 }, // Hot Magenta
+      { color: 'rgba(255, 255, 255, 0.95)', freq: 4.5, speed: 0.07, ampMult: 0.5, width: 1.8 }  // White Core
     ];
 
-    // Floating particles
     this.particles = [];
     this.initParticles();
-
     this.initCanvas();
     this.initSpeechRecognition();
     this.initEvents();
@@ -49,12 +52,12 @@ class VoiceOrbController {
 
   initParticles() {
     this.particles = [];
-    for (let i = 0; i < 28; i++) {
+    for (let i = 0; i < 20; i++) {
       this.particles.push({
         angle: Math.random() * Math.PI * 2,
-        dist: 40 + Math.random() * 80,
+        dist: 20 + Math.random() * 50,
         speed: 0.005 + Math.random() * 0.015,
-        size: 1.2 + Math.random() * 2.4,
+        size: 1.0 + Math.random() * 2.0,
         color: i % 2 === 0 ? 'rgba(6, 182, 212, ' : 'rgba(236, 72, 153, ',
         alpha: 0.2 + Math.random() * 0.6
       });
@@ -65,32 +68,40 @@ class VoiceOrbController {
     if (!this.canvas) return;
     const dpr = window.devicePixelRatio || 1;
     const rect = this.canvas.getBoundingClientRect();
-    const logicalW = rect.width > 0 ? rect.width : 360;
-    const logicalH = 320;
+    const logicalW = rect.width > 0 ? rect.width : 340;
+    const logicalH = 110;
 
     this.canvas.width = logicalW * dpr;
     this.canvas.height = logicalH * dpr;
+    this.ctx = this.canvas.getContext('2d');
     this.ctx.scale(dpr, dpr);
     this.logicalW = logicalW;
     this.logicalH = logicalH;
   }
 
   async initMicrophoneAudio() {
-    if (this.audioContext) return;
     try {
-      const AudioContext = window.AudioContext || window.webkitAudioContext;
-      if (!AudioContext) return;
-      this.audioContext = new AudioContext();
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      this.micStream = stream;
-      const source = this.audioContext.createMediaStreamSource(stream);
-      this.analyser = this.audioContext.createAnalyser();
-      this.analyser.fftSize = 256;
-      this.analyser.smoothingTimeConstant = 0.8;
-      source.connect(this.analyser);
-      this.dataArray = new Uint8Array(this.analyser.frequencyBinCount);
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      if (!this.audioContext) {
+        this.audioContext = new AudioCtx();
+      }
+      if (this.audioContext.state === 'suspended') {
+        await this.audioContext.resume();
+      }
+
+      if (!this.micStream) {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        this.micStream = stream;
+        const source = this.audioContext.createMediaStreamSource(stream);
+        this.analyser = this.audioContext.createAnalyser();
+        this.analyser.fftSize = 128;
+        this.analyser.smoothingTimeConstant = 0.8;
+        source.connect(this.analyser);
+        this.dataArray = new Uint8Array(this.analyser.frequencyBinCount);
+      }
     } catch (err) {
-      console.warn('Mikrofon audio analizatoriga ulanmadi (ixtiyoriy):', err);
+      console.warn('Mikrofon audio analizatoriga ulanmadi (ixtiyoriy vizual):', err);
     }
   }
 
@@ -105,28 +116,53 @@ class VoiceOrbController {
       this.recognition.onstart = () => {
         this.isListening = true;
         this.isThinking = false;
-        this.updateStatus('Eshityapman... Marhamat, gapiring!', '#06b6d4');
+        this.updateStatus('Eshityapman... Gapiring!', '#06b6d4');
         this.micToggleBtn?.classList.add('mic-active');
         this.targetIntensity = 0.6;
+        this.lastRecognizedText = '';
       };
 
       this.recognition.onresult = (event) => {
-        let transcript = '';
+        let interimText = '';
+        let finalText = '';
+        let hasFinal = false;
+
         for (let i = event.resultIndex; i < event.results.length; ++i) {
-          transcript += event.results[i][0].transcript;
-        }
-        if (this.transcriptBox) {
-          this.transcriptBox.textContent = `"${transcript}"`;
+          const res = event.results[i];
+          const part = res[0]?.transcript || '';
+          if (res.isFinal) {
+            hasFinal = true;
+            finalText += part;
+          } else {
+            interimText += part;
+          }
         }
 
-        // Nutq tugagach avtomatik yuborish
-        if (event.results[0].isFinal) {
-          this.handleVoiceCommand(transcript);
+        const currentText = (finalText || interimText).trim();
+        if (currentText) {
+          this.lastRecognizedText = currentText;
+          if (this.transcriptBox) {
+            this.transcriptBox.innerHTML = `<strong>Siz:</strong> "${this.escapeHtml(currentText)}"`;
+          }
+        }
+
+        // Agar yakuniy nutq aniqlansa
+        if (hasFinal && finalText.trim()) {
+          clearTimeout(this.silenceTimer);
+          this.handleVoiceCommand(finalText.trim());
+        } else if (currentText) {
+          // 1.3 soniya jimlik bo'lsa avtomatik jo'natish
+          clearTimeout(this.silenceTimer);
+          this.silenceTimer = setTimeout(() => {
+            if (this.isListening && this.lastRecognizedText.trim() && !this.isThinking && !this.isSpeaking) {
+              this.handleVoiceCommand(this.lastRecognizedText.trim());
+            }
+          }, 1300);
         }
       };
 
       this.recognition.onerror = (event) => {
-        console.warn('Speech recognition error:', event.error);
+        console.warn('Speech recognition xatosi:', event.error);
         if (event.error !== 'no-speech') {
           this.updateStatus(`Ovoz xatosi: ${event.error}`, '#f43f5e');
         }
@@ -144,10 +180,14 @@ class VoiceOrbController {
       };
     } else {
       console.warn('Brauzerda Web Speech API qo‘llab-quvvatlanmaydi.');
+      if (this.transcriptBox) {
+        this.transcriptBox.innerHTML = `<em>Brauzeringizda ovozli nutqni aniqlash yo'q. Quyidagi qatordan yozib yuborishingiz mumkin!</em>`;
+      }
     }
   }
 
   initEvents() {
+    // Mikrofon tugmasi
     this.micToggleBtn?.addEventListener('click', () => {
       if (this.isListening) {
         this.stopListening();
@@ -156,10 +196,12 @@ class VoiceOrbController {
       }
     });
 
+    // Ovozni to'xtatish tugmasi
     this.stopSpeechBtn?.addEventListener('click', () => {
       this.stopSpeaking();
     });
 
+    // Panelni ochish / yopish
     document.getElementById('openVoiceModalBtn')?.addEventListener('click', () => {
       this.openModal();
     });
@@ -167,11 +209,40 @@ class VoiceOrbController {
     document.getElementById('closeVoiceModalBtn')?.addEventListener('click', () => {
       this.closeModal();
     });
+
+    // Backdrop bosilganda yopish
+    this.modal?.addEventListener('click', (e) => {
+      if (e.target === this.modal) {
+        this.closeModal();
+      }
+    });
+
+    // Tezkor matn kiritish (Siri panel ichidan)
+    this.quickSendBtn?.addEventListener('click', () => {
+      this.sendQuickText();
+    });
+
+    this.quickInput?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        this.sendQuickText();
+      }
+    });
+  }
+
+  sendQuickText() {
+    if (!this.quickInput) return;
+    const text = this.quickInput.value.trim();
+    if (!text) return;
+    this.quickInput.value = '';
+    this.handleVoiceCommand(text);
   }
 
   openModal() {
     this.modal?.classList.add('active');
-    this.initCanvas();
+    setTimeout(() => {
+      this.initCanvas();
+    }, 50);
     this.initMicrophoneAudio();
     this.startListening();
     this.startAnimationLoop();
@@ -182,6 +253,7 @@ class VoiceOrbController {
     this.stopListening();
     this.stopSpeaking();
     this.isThinking = false;
+    clearTimeout(this.silenceTimer);
     if (this.animationFrameId) {
       cancelAnimationFrame(this.animationFrameId);
       this.animationFrameId = null;
@@ -201,8 +273,11 @@ class VoiceOrbController {
   }
 
   stopListening() {
+    clearTimeout(this.silenceTimer);
     if (this.recognition && this.isListening) {
-      this.recognition.stop();
+      try {
+        this.recognition.stop();
+      } catch (e) {}
       this.isListening = false;
       this.micToggleBtn?.classList.remove('mic-active');
     }
@@ -215,17 +290,26 @@ class VoiceOrbController {
     }
   }
 
+  escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m]);
+  }
+
   async handleVoiceCommand(userText) {
-    if (!userText.trim()) return;
+    if (!userText || !userText.trim()) return;
 
     this.stopListening();
     this.isThinking = true;
     this.updateStatus('zayniddin_ai o‘ylamoqda...', '#a855f7');
-    this.targetIntensity = 0.7;
+    this.targetIntensity = 0.75;
+
+    if (this.transcriptBox) {
+      this.transcriptBox.innerHTML = `<strong>Siz:</strong> "${this.escapeHtml(userText)}"<br><span style="color:#94a3b8; font-size:0.8rem; font-style:italic;">Javob tayyorlanmoqda...</span>`;
+    }
 
     try {
       const activeChatId = window.appState?.activeChatId;
-      const apiKey = localStorage.getItem('personal_ai_key') || '';
+      const apiKey = localStorage.getItem('personal_ai_key') || (window.appState ? window.appState.apiKey : '') || '';
       const headers = { 'Content-Type': 'application/json' };
       if (apiKey) headers['x-api-key'] = apiKey;
 
@@ -238,7 +322,9 @@ class VoiceOrbController {
         });
         const newChat = await newChatRes.json();
         targetChatId = newChat.id;
-        window.appState.activeChatId = newChat.id;
+        if (window.appState) {
+          window.appState.activeChatId = newChat.id;
+        }
         window.dispatchEvent(new CustomEvent('refresh-chats'));
       }
 
@@ -248,39 +334,58 @@ class VoiceOrbController {
         body: JSON.stringify({ content: userText })
       });
 
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error || `Server xatosi: ${res.status}`);
+      }
+
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let assistantReply = '';
+      let sseBuffer = '';
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        const chunk = decoder.decode(value);
-        const lines = chunk.split('\n');
+        sseBuffer += decoder.decode(value, { stream: true });
+        const lines = sseBuffer.split('\n');
+        sseBuffer = lines.pop(); // chala qatorni saqlaymiz
+
         for (const line of lines) {
-          if (line.startsWith('data: ')) {
+          const trimmed = line.trim();
+          if (trimmed.startsWith('data: ')) {
             try {
-              const data = JSON.parse(line.replace('data: ', ''));
-              if (data.chunk) assistantReply += data.chunk;
+              const data = JSON.parse(trimmed.slice(6));
+              if (data.chunk) {
+                assistantReply += data.chunk;
+                if (this.transcriptBox) {
+                  const preview = assistantReply.replace(/:::image-card[\s\S]*?:::/g, '[Rasm]').replace(/```[\s\S]*?```/g, '[Kod]').slice(0, 160);
+                  this.transcriptBox.innerHTML = `<strong>AI:</strong> ${this.escapeHtml(preview)}${assistantReply.length > 160 ? '...' : ''}`;
+                }
+              }
             } catch (e) {}
           }
         }
       }
 
-      if (this.transcriptBox) {
-        this.transcriptBox.textContent = assistantReply;
-      }
-
       window.dispatchEvent(new CustomEvent('refresh-active-chat'));
 
       this.isThinking = false;
-      this.speakText(assistantReply);
+      if (assistantReply.trim()) {
+        await this.speakText(assistantReply);
+      } else {
+        this.updateStatus('Javob olinmadi', '#f43f5e');
+        this.targetIntensity = 0.2;
+      }
 
     } catch (err) {
       console.error('Ovozli suhbatda xatolik:', err);
       this.isThinking = false;
       this.updateStatus('Xatolik: ' + err.message, '#f43f5e');
       this.targetIntensity = 0.2;
+      if (this.transcriptBox) {
+        this.transcriptBox.innerHTML = `<span style="color:#f87171;">Xatolik: ${this.escapeHtml(err.message)}</span>`;
+      }
     }
   }
 
@@ -291,21 +396,34 @@ class VoiceOrbController {
     this.updateStatus('zayniddin_ai javob bermoqda...', '#38bdf8');
     this.targetIntensity = 0.95;
 
-    const cleanText = text.replace(/```[\s\S]*?```/g, 'Mana bu kod blokini chatda ko‘rishingiz mumkin.')
-                          .replace(/[#*_`]/g, '')
-                          .trim();
+    // Tozalangan matn (kod bloklari, rasm teglari va ortiqcha belgilarni tozalash)
+    let cleanText = text
+      .replace(/:::image-card[\s\S]*?:::/g, '')
+      .replace(/```reminder[\s\S]*?```/g, 'Eslatmani tayyorladim.')
+      .replace(/```[\s\S]*?```/g, 'Kodni chatda ko‘rishingiz mumkin.')
+      .replace(/!\[.*?\]\(.*?\)/g, '')
+      .replace(/[#*_`~>]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
 
-    // 1. OpenAI TTS orqali tiniq, ravon va tabiiy o'zbek ovozi
+    if (!cleanText) {
+      cleanText = "Javob tayyorlandi, chatda ko'rishingiz mumkin.";
+    }
+
+    if (this.transcriptBox) {
+      this.transcriptBox.innerHTML = `<strong>AI:</strong> ${this.escapeHtml(cleanText.slice(0, 180))}${cleanText.length > 180 ? '...' : ''}`;
+    }
+
+    // 1. OpenAI TTS orqali tiniq o'zbek ovozi
     try {
+      const apiKey = localStorage.getItem('personal_ai_key') || (window.appState ? window.appState.apiKey : '') || '';
       const headers = { 'Content-Type': 'application/json' };
-      if (window.appState && window.appState.apiKey) {
-        headers['x-api-key'] = window.appState.apiKey;
-      }
+      if (apiKey) headers['x-api-key'] = apiKey;
 
       const res = await fetch('/api/speak', {
         method: 'POST',
         headers,
-        body: JSON.stringify({ text: cleanText, voice: 'nova' })
+        body: JSON.stringify({ text: cleanText.slice(0, 1000), voice: 'nova' })
       });
 
       if (res.ok) {
@@ -313,7 +431,6 @@ class VoiceOrbController {
         const audioUrl = URL.createObjectURL(audioBlob);
         this.currentAudio = new Audio(audioUrl);
 
-        // Ovoz to'lqinlari dinamik harakati (Siri animatsiyasi)
         const wavePulseInterval = setInterval(() => {
           if (this.isSpeaking) {
             this.targetIntensity = 0.65 + Math.random() * 0.35;
@@ -338,7 +455,7 @@ class VoiceOrbController {
 
         this.currentAudio.onerror = (e) => {
           clearInterval(wavePulseInterval);
-          console.warn('Audio ijro xatoligi:', e);
+          console.warn('Audio ijro xatoligi, brauzer ovoziga o‘tilmoqda:', e);
           this.fallbackSpeechSynthesis(cleanText);
         };
 
@@ -383,6 +500,10 @@ class VoiceOrbController {
       };
 
       window.speechSynthesis.speak(utterance);
+    } else {
+      this.isSpeaking = false;
+      this.updateStatus('Tinglashga tayyorman', '#10b981');
+      this.targetIntensity = 0.2;
     }
   }
 
@@ -413,130 +534,95 @@ class VoiceOrbController {
   renderSiriVisuals(time = 0) {
     if (!this.ctx || !this.canvas) return;
     const ctx = this.ctx;
-    const width = this.logicalW || 360;
-    const height = this.logicalH || 320;
+    const width = this.logicalW || 340;
+    const height = this.logicalH || 110;
     const cx = width / 2;
     const cy = height / 2;
 
-    // Real audio frequency check
     if (this.analyser && this.dataArray && this.isListening) {
       this.analyser.getByteFrequencyData(this.dataArray);
       let sum = 0;
-      for (let i = 0; i < 32; i++) {
+      for (let i = 0; i < 24; i++) {
         sum += this.dataArray[i];
       }
-      const avg = sum / 32;
-      this.audioLevel = avg / 140; // normalized 0..1
-      this.targetIntensity = Math.max(0.25, Math.min(1.2, 0.2 + this.audioLevel * 1.1));
+      const avg = sum / 24;
+      this.audioLevel = avg / 140;
+      this.targetIntensity = Math.max(0.22, Math.min(1.1, 0.2 + this.audioLevel * 1.1));
     } else if (this.isSpeaking) {
-      // Dynamic vocal cadence for AI speech
-      const vocalRhythm = Math.sin(time * 0.007) * 0.3 + Math.sin(time * 0.018) * 0.2;
-      this.targetIntensity = 0.75 + vocalRhythm;
+      const vocalRhythm = Math.sin(time * 0.007) * 0.28 + Math.sin(time * 0.018) * 0.18;
+      this.targetIntensity = 0.72 + vocalRhythm;
     } else if (this.isThinking) {
-      // Hypnotic rotating pulse for thinking
-      this.targetIntensity = 0.55 + Math.sin(time * 0.009) * 0.25;
+      this.targetIntensity = 0.55 + Math.sin(time * 0.009) * 0.22;
     } else {
-      // Idle breathing
-      this.targetIntensity = 0.22 + Math.sin(time * 0.003) * 0.08;
+      this.targetIntensity = 0.2 + Math.sin(time * 0.003) * 0.06;
     }
 
-    // Smooth lerp intensity
     this.intensity += (this.targetIntensity - this.intensity) * 0.12;
     this.phase += 0.035 + (this.intensity * 0.04);
 
     ctx.clearRect(0, 0, width, height);
 
-    // 1. Siri Core Radial Iris Plasma Glow
-    const baseRadius = 55 + (this.intensity * 25);
-    const auraGradient = ctx.createRadialGradient(cx, cy, 5, cx, cy, baseRadius * 1.9);
-    
-    if (this.isThinking) {
-      auraGradient.addColorStop(0, `rgba(168, 85, 247, ${0.85 * this.intensity})`);
-      auraGradient.addColorStop(0.5, `rgba(236, 72, 153, ${0.45 * this.intensity})`);
-    } else if (this.isSpeaking) {
-      auraGradient.addColorStop(0, `rgba(6, 182, 212, ${0.9 * this.intensity})`);
-      auraGradient.addColorStop(0.5, `rgba(99, 102, 241, ${0.5 * this.intensity})`);
-    } else {
-      auraGradient.addColorStop(0, `rgba(59, 130, 246, ${0.75 * this.intensity})`);
-      auraGradient.addColorStop(0.5, `rgba(147, 51, 234, ${0.4 * this.intensity})`);
-    }
-    auraGradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    // 1. Markaziy Siri Core Glow
+    const baseRadius = 24 + (this.intensity * 14);
+    const grad = ctx.createRadialGradient(cx, cy, 2, cx, cy, baseRadius * 1.8);
+    grad.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
+    grad.addColorStop(0.25, 'rgba(6, 182, 212, 0.75)');
+    grad.addColorStop(0.55, 'rgba(168, 85, 247, 0.6)');
+    grad.addColorStop(0.85, 'rgba(236, 72, 153, 0.35)');
+    grad.addColorStop(1, 'rgba(236, 72, 153, 0)');
 
     ctx.save();
-    ctx.fillStyle = auraGradient;
     ctx.beginPath();
-    ctx.arc(cx, cy, baseRadius * 1.9, 0, Math.PI * 2);
+    ctx.arc(cx, cy, baseRadius * 1.8, 0, Math.PI * 2);
+    ctx.fillStyle = grad;
     ctx.fill();
     ctx.restore();
 
-    // 2. Rotating Orbital Particles
-    ctx.save();
-    for (let p of this.particles) {
-      p.angle += p.speed * (1 + this.intensity * 1.5);
-      const px = cx + Math.cos(p.angle) * (p.dist + this.intensity * 15);
-      const py = cy + Math.sin(p.angle) * (p.dist * 0.65);
-      ctx.fillStyle = `${p.color}${p.alpha * Math.min(1, this.intensity * 1.4)})`;
+    // 2. Neon garmonik to'lqin chiziqlari
+    const step = 4;
+    for (const w of this.waves) {
+      ctx.save();
       ctx.beginPath();
-      ctx.arc(px, py, p.size, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    ctx.restore();
-
-    // 3. Apple Siri Multi-Layered Undulating Chromatic Waves
-    ctx.save();
-    ctx.globalCompositeOperation = 'lighter'; // Generates glowing Siri light blend
-
-    const step = 2;
-    const maxAmp = 42 * this.intensity;
-
-    this.waves.forEach((w, index) => {
-      ctx.beginPath();
-      ctx.strokeStyle = w.color;
       ctx.lineWidth = w.width;
+      ctx.strokeStyle = w.color;
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
-
-      const wavePhase = this.phase * (w.speed * 28) + (index * 1.3);
-      let started = false;
+      ctx.shadowColor = w.color;
+      ctx.shadowBlur = 10;
 
       for (let x = 0; x <= width; x += step) {
-        // Normalized x (-1 to 1)
-        const nx = (x / width) * 2 - 1;
-        // Quartic bell curve envelope: tapers to 0 at edges, peaks at center
-        const envelope = Math.pow(Math.max(0, 1 - nx * nx), 2.2);
+        const normX = (x - cx) / (width / 2);
+        const envelope = Math.max(0, 1 - Math.pow(normX, 2));
+        const waveOffset = Math.sin(x * 0.025 * w.freq + this.phase * w.speed * 22) * (20 * this.intensity * w.ampMult) * envelope;
+        const y = cy + waveOffset;
 
-        // Sinusoidal harmonics
-        const harmonic1 = Math.sin(nx * w.freq * 2.4 + wavePhase);
-        const harmonic2 = Math.cos(nx * (w.freq * 1.7) - wavePhase * 0.8) * 0.4;
-        const harmonic3 = Math.sin(nx * (w.freq * 3.1) + wavePhase * 1.2) * 0.2;
-
-        const y = cy + envelope * maxAmp * w.ampMult * (harmonic1 + harmonic2 + harmonic3);
-
-        if (!started) {
+        if (x === 0) {
           ctx.moveTo(x, y);
-          started = true;
         } else {
           ctx.lineTo(x, y);
         }
       }
       ctx.stroke();
-    });
+      ctx.restore();
+    }
 
-    // 4. Center Glowing Bright Iris Core
-    const coreGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, baseRadius * 0.7);
-    coreGrad.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
-    coreGrad.addColorStop(0.3, 'rgba(6, 182, 212, 0.7)');
-    coreGrad.addColorStop(0.7, 'rgba(168, 85, 247, 0.35)');
-    coreGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    // 3. Yonuvchi mikro-zarrachalar
+    ctx.save();
+    for (const p of this.particles) {
+      p.angle += p.speed * (0.8 + this.intensity);
+      const px = cx + Math.cos(p.angle) * (p.dist * (0.7 + this.intensity * 0.4));
+      const py = cy + Math.sin(p.angle) * (p.dist * 0.45 * (0.7 + this.intensity * 0.4));
 
-    ctx.fillStyle = coreGrad;
-    ctx.beginPath();
-    ctx.arc(cx, cy, baseRadius * 0.7, 0, Math.PI * 2);
-    ctx.fill();
-
+      ctx.beginPath();
+      ctx.arc(px, py, p.size, 0, Math.PI * 2);
+      ctx.fillStyle = p.color + (p.alpha * Math.min(1, this.intensity * 1.3)) + ')';
+      ctx.fill();
+    }
     ctx.restore();
   }
 }
 
-// Global obyekt sifatida eksport
-window.voiceOrb = new VoiceOrbController();
+// Global instansiya
+document.addEventListener('DOMContentLoaded', () => {
+  window.voiceOrb = new VoiceOrbController();
+});

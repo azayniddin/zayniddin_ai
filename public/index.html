@@ -34,6 +34,11 @@
 </head>
 <body>
 
+  <!-- 3D Glassmorphism Ambient Light Orbs -->
+  <div class="ambient-mesh-glow sphere-indigo"></div>
+  <div class="ambient-mesh-glow sphere-cyan"></div>
+  <div class="ambient-mesh-glow sphere-purple"></div>
+
   <!-- Mobile Backdrop Overlay for Sidebar -->
   <div class="sidebar-overlay" id="sidebarOverlay" onclick="window.closeAppSidebar()"></div>
 
@@ -222,40 +227,59 @@
 
   </div>
 
-  <!-- VOICE SIRI FULLSCREEN MODAL -->
-  <div class="voice-modal" id="voiceModal">
-    <!-- iOS 18 Siri Screen Edge Glow -->
-    <div class="siri-edge-glow"></div>
+  <!-- COMPACT 3D GLASS SIRI VOICE PANEL -->
+  <div class="voice-modal-backdrop" id="voiceModal">
+    <div class="siri-compact-card glass-3d">
+      
+      <!-- Card Header -->
+      <div class="siri-card-header">
+        <div class="siri-brand-badge">
+          <div class="siri-logo-glow">
+            <img src="/icons/icon.svg" alt="zayniddin_ai" class="siri-logo-mini">
+          </div>
+          <div>
+            <div class="siri-title">zayniddin_ai Ovoz</div>
+            <div class="siri-status-sub" id="voiceStatusBadge">
+              <span class="status-dot"></span>
+              <span id="voiceStatusText">Eshityapman...</span>
+            </div>
+          </div>
+        </div>
+        
+        <button class="icon-button siri-close-btn" id="closeVoiceModalBtn" title="Yopish">
+          <i data-lucide="x" style="width: 18px; height: 18px;"></i>
+        </button>
+      </div>
 
-    <button class="voice-close-btn" id="closeVoiceModalBtn" title="Yopish">
-      <i data-lucide="x" style="width: 22px; height: 22px;"></i>
-    </button>
+      <!-- Compact Siri Waveform Canvas -->
+      <div class="voice-orb-container-compact">
+        <canvas id="voiceCanvas"></canvas>
+      </div>
 
-    <div class="siri-header-tag">
-      <img src="/icons/icon.svg" alt="zayniddin_ai" class="siri-logo-mini">
-      <span>zayniddin_ai Siri Voice</span>
-    </div>
+      <!-- Live Transcript Box -->
+      <div class="voice-transcript-box-compact" id="voiceTranscriptBox">
+        "Salom! Sizni eshityapman, marhamat gapiring yoki pastga yozing..."
+      </div>
 
-    <div class="voice-orb-container">
-      <canvas id="voiceCanvas"></canvas>
-    </div>
+      <!-- Siri Controls & Quick Text Input -->
+      <div class="siri-bottom-bar">
+        <div class="siri-quick-input-row">
+          <input type="text" id="siriQuickInput" placeholder="Yozib ham yuborishingiz mumkin...">
+          <button class="siri-send-btn" id="siriSendQuickBtn" title="Yuborish">
+            <i data-lucide="arrow-up" style="width: 16px; height: 16px;"></i>
+          </button>
+        </div>
 
-    <div class="voice-status-badge" id="voiceStatusBadge">
-      <span class="status-dot"></span>
-      <span id="voiceStatusText">Eshityapman... Gapiring!</span>
-    </div>
+        <div class="voice-controls-compact">
+          <button class="voice-control-btn mic-active" id="voiceMicToggleBtn" title="Mikrofonni boshqarish">
+            <i data-lucide="mic" id="voiceMicIcon" style="width: 22px; height: 22px;"></i>
+          </button>
+          <button class="voice-control-btn" id="voiceStopSpeechBtn" title="Ovozni to'xtatish">
+            <i data-lucide="volume-x" style="width: 20px; height: 20px;"></i>
+          </button>
+        </div>
+      </div>
 
-    <div class="voice-transcript-box" id="voiceTranscriptBox">
-      "Siz gapirganingizda so‘zlaringiz shu yerda aks etadi va AI sizga o‘zbek tilida javob beradi."
-    </div>
-
-    <div class="voice-controls">
-      <button class="voice-control-btn mic-active" id="voiceMicToggleBtn" title="Mikrofon">
-        <i data-lucide="mic" id="voiceMicIcon" style="width: 26px; height: 26px;"></i>
-      </button>
-      <button class="voice-control-btn" id="voiceStopSpeechBtn" title="Gapirishni to'xtatish">
-        <i data-lucide="volume-x" style="width: 26px; height: 26px;"></i>
-      </button>
     </div>
   </div>
 

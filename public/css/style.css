@@ -44,20 +44,80 @@ body {
     radial-gradient(circle at 50% 50%, rgba(6, 182, 212, 0.05) 0%, transparent 60%);
 }
 
-/* Glassmorphism Classes */
-.glass {
-  background: var(--bg-surface);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--border-subtle);
+/* Ambient 3D Light Spheres for Real Glass Refraction */
+.ambient-mesh-glow {
+  position: fixed;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+  filter: blur(100px);
+  opacity: 0.55;
+  animation: ambientFloat 14s ease-in-out infinite alternate;
 }
 
-.glass-card {
-  background: var(--bg-card);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--border-subtle);
-  border-radius: 14px;
+.sphere-indigo {
+  top: 5%;
+  left: 15%;
+  width: 480px;
+  height: 480px;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.45) 0%, rgba(79, 70, 229, 0) 70%);
+}
+
+.sphere-cyan {
+  bottom: 8%;
+  right: 12%;
+  width: 520px;
+  height: 520px;
+  background: radial-gradient(circle, rgba(6, 182, 212, 0.35) 0%, rgba(14, 165, 233, 0) 70%);
+  animation-delay: -5s;
+}
+
+.sphere-purple {
+  top: 45%;
+  left: 48%;
+  width: 420px;
+  height: 420px;
+  background: radial-gradient(circle, rgba(168, 85, 247, 0.3) 0%, rgba(236, 72, 153, 0) 70%);
+  animation-delay: -9s;
+}
+
+@keyframes ambientFloat {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(25px, -30px) scale(1.08);
+  }
+  100% {
+    transform: translate(-20px, 25px) scale(0.95);
+  }
+}
+
+/* 3D Glassmorphism System */
+.glass, .glass-3d {
+  background: linear-gradient(135deg, rgba(22, 27, 44, 0.7) 0%, rgba(13, 16, 28, 0.8) 100%);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.45);
+  box-shadow: 0 16px 36px -8px rgba(0, 0, 0, 0.55),
+              0 1px 0 rgba(255, 255, 255, 0.15) inset;
+}
+
+.glass-card, .glass-card-3d {
+  background: linear-gradient(135deg, rgba(26, 32, 54, 0.65) 0%, rgba(16, 20, 36, 0.75) 100%);
+  backdrop-filter: blur(18px) saturate(180%);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  border-top: 1px solid rgba(255, 255, 255, 0.22);
+  border-left: 1px solid rgba(255, 255, 255, 0.14);
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.4);
+  border-radius: 16px;
+  box-shadow: 0 12px 30px -6px rgba(0, 0, 0, 0.45),
+              0 1px 0 rgba(255, 255, 255, 0.12) inset;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Layout */
@@ -73,7 +133,11 @@ body {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  border-right: 1px solid var(--border-subtle);
+  background: linear-gradient(180deg, rgba(16, 21, 38, 0.82) 0%, rgba(10, 13, 24, 0.92) 100%);
+  backdrop-filter: blur(28px) saturate(190%);
+  -webkit-backdrop-filter: blur(28px) saturate(190%);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 8px 0 32px -8px rgba(0, 0, 0, 0.6);
   z-index: 20;
   transition: margin-left 0.28s cubic-bezier(0.4, 0, 0.2, 1),
               transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
@@ -95,7 +159,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid var(--border-subtle);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .brand-badge {
@@ -118,15 +182,13 @@ body {
   width: 100%;
   height: 100%;
   border-radius: 10px;
-  object-fit: cover;
-  box-shadow: 0 0 16px rgba(0, 242, 254, 0.45);
 }
 
 .brand-text h1 {
   font-size: 1.05rem;
   font-weight: 700;
   letter-spacing: -0.02em;
-  background: linear-gradient(to right, #fff, #cbd5e1);
+  background: linear-gradient(135deg, #fff 40%, #cbd5e1 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -330,13 +392,18 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid var(--border-subtle);
+  background: linear-gradient(180deg, rgba(18, 23, 42, 0.78) 0%, rgba(11, 14, 26, 0.86) 100%);
+  backdrop-filter: blur(24px) saturate(190%);
+  -webkit-backdrop-filter: blur(24px) saturate(190%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.15);
   z-index: 10;
 }
 
 .current-chat-details h2 {
   font-size: 1rem;
   font-weight: 600;
+  color: #fff;
 }
 
 .current-chat-details span {
@@ -351,7 +418,7 @@ body {
 }
 
 .pill-btn {
-  padding: 8px 14px;
+  padding: 8px 15px;
   border-radius: 20px;
   font-size: 0.82rem;
   font-weight: 600;
@@ -359,35 +426,46 @@ body {
   align-items: center;
   gap: 7px;
   cursor: pointer;
-  transition: all 0.2s ease;
-  border: 1px solid var(--border-subtle);
-  background: rgba(255, 255, 255, 0.04);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border-top: 1px solid rgba(255, 255, 255, 0.24);
+  border-left: 1px solid rgba(255, 255, 255, 0.14);
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.4);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%);
   color: var(--text-main);
+  box-shadow: 0 6px 16px -4px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
 .pill-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.2);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.05) 100%);
+  border-color: rgba(255, 255, 255, 0.32);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 22px -4px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
 
-.pill-btn.vision-btn {
-  color: #38bdf8;
-  border-color: rgba(56, 189, 248, 0.3);
+.pill-btn:active {
+  transform: translateY(1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
 }
 
-.pill-btn.vision-btn:hover, .pill-btn.vision-btn.active {
-  background: rgba(56, 189, 248, 0.15);
-  box-shadow: 0 0 12px rgba(56, 189, 248, 0.3);
+.pill-btn.draw-btn {
+  color: #f59e0b;
+  border-color: rgba(245, 158, 11, 0.35);
+}
+
+.pill-btn.draw-btn:hover {
+  background: rgba(245, 158, 11, 0.18);
+  box-shadow: 0 0 18px rgba(245, 158, 11, 0.35);
 }
 
 .pill-btn.voice-btn {
   color: #c084fc;
-  border-color: rgba(192, 132, 252, 0.3);
+  border-color: rgba(192, 132, 252, 0.35);
 }
 
 .pill-btn.voice-btn:hover, .pill-btn.voice-btn.active {
-  background: rgba(192, 132, 252, 0.15);
-  box-shadow: 0 0 12px rgba(192, 132, 252, 0.3);
+  background: rgba(192, 132, 252, 0.18);
+  box-shadow: 0 0 18px rgba(192, 132, 252, 0.35);
 }
 
 /* Chat Messages Stream Area */
@@ -493,18 +571,27 @@ body {
 }
 
 .prompt-card {
-  padding: 14px 16px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--border-subtle);
+  padding: 16px 18px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(26, 32, 54, 0.65) 0%, rgba(15, 19, 36, 0.75) 100%);
+  backdrop-filter: blur(18px) saturate(180%);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  border-top: 1px solid rgba(255, 255, 255, 0.22);
+  border-left: 1px solid rgba(255, 255, 255, 0.14);
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.45);
+  box-shadow: 0 12px 28px -6px rgba(0, 0, 0, 0.45),
+              inset 0 1px 0 rgba(255, 255, 255, 0.15);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .prompt-card:hover {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: var(--border-focus);
-  transform: translateY(-2px);
+  background: linear-gradient(135deg, rgba(35, 42, 70, 0.8) 0%, rgba(20, 25, 48, 0.88) 100%);
+  border-color: rgba(99, 102, 241, 0.5);
+  transform: translateY(-4px) scale(1.015);
+  box-shadow: 0 18px 36px -6px rgba(99, 102, 241, 0.35),
+              inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
 .prompt-card h4 {
@@ -543,51 +630,69 @@ body {
 
 .msg-avatar.ai {
   background: linear-gradient(135deg, #6366f1, #a855f7);
-  box-shadow: 0 0 12px var(--primary-glow);
+  box-shadow: 0 0 16px var(--primary-glow);
 }
 
 .msg-bubble {
   max-width: 85%;
-  padding: 14px 18px;
-  border-radius: 16px;
-  font-size: 0.93rem;
+  padding: 15px 20px;
+  border-radius: 18px;
+  font-size: 0.94rem;
   line-height: 1.65;
   word-break: break-word;
 }
 
 .message-row.user .msg-bubble {
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.25), rgba(168, 85, 247, 0.25));
-  border: 1px solid rgba(99, 102, 241, 0.4);
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.45) 0%, rgba(168, 85, 247, 0.4) 100%);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-top: 1px solid rgba(255, 255, 255, 0.35);
+  border-left: 1px solid rgba(255, 255, 255, 0.22);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.4);
   color: #fff;
   border-top-right-radius: 4px;
+  box-shadow: 0 12px 28px -6px rgba(99, 102, 241, 0.35),
+              inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
 
 .message-row.assistant .msg-bubble {
-  background: rgba(24, 27, 40, 0.7);
-  border: 1px solid var(--border-subtle);
+  background: linear-gradient(135deg, rgba(22, 27, 46, 0.82) 0%, rgba(13, 16, 30, 0.88) 100%);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border-top: 1px solid rgba(255, 255, 255, 0.18);
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.5);
   color: var(--text-main);
   border-top-left-radius: 4px;
+  box-shadow: 0 14px 32px -8px rgba(0, 0, 0, 0.55),
+              inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .msg-bubble-image {
   max-width: 100%;
   max-height: 280px;
-  border-radius: 10px;
+  border-radius: 12px;
   margin-bottom: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
   display: block;
 }
 
 /* Code Blocks Styling */
 pre {
-  background: #0d1117 !important;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
+  background: #0b0f19 !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.5);
+  border-radius: 12px;
   margin: 12px 0;
   position: relative;
   overflow-x: auto;
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.85rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
 }
 
 code {
@@ -598,24 +703,24 @@ p > code {
   background: rgba(255, 255, 255, 0.1);
   padding: 2px 6px;
   border-radius: 5px;
-  color: #38bdf8;
   font-size: 0.85em;
+  color: var(--accent-cyan);
 }
 
 .code-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 6px 12px;
-  background: #161b22;
+  background: rgba(255, 255, 255, 0.04);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 6px 12px;
   font-size: 0.75rem;
-  color: var(--text-dim);
+  color: var(--text-muted);
 }
 
 .copy-code-btn {
-  background: transparent;
-  border: none;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   color: var(--text-muted);
   cursor: pointer;
   display: flex;
@@ -628,32 +733,45 @@ p > code {
 }
 
 .copy-code-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.15);
   color: #fff;
 }
 
 /* Chat Input Bar */
 .chat-input-area {
   padding: 16px 24px 20px;
-  background: linear-gradient(to top, var(--bg-main) 70%, transparent);
+  background: linear-gradient(to top, rgba(9, 10, 15, 0.95) 75%, transparent);
   z-index: 10;
 }
 
 .input-box-wrapper {
   max-width: 860px;
   margin: 0 auto;
-  border-radius: 16px;
-  padding: 6px 12px;
+  border-radius: 20px;
+  padding: 8px 14px;
   display: flex;
   flex-direction: column;
   gap: 6px;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  background: linear-gradient(135deg, rgba(25, 31, 54, 0.85) 0%, rgba(13, 17, 32, 0.92) 100%);
+  backdrop-filter: blur(28px) saturate(200%);
+  -webkit-backdrop-filter: blur(28px) saturate(200%);
+  border-top: 1px solid rgba(255, 255, 255, 0.28);
+  border-left: 1px solid rgba(255, 255, 255, 0.16);
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.6);
+  box-shadow: 0 20px 48px -10px rgba(0, 0, 0, 0.7),
+              0 0 30px rgba(99, 102, 241, 0.12),
+              inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
 }
 
 .input-box-wrapper:focus-within {
-  border-color: var(--border-focus);
-  box-shadow: 0 0 20px rgba(99, 102, 241, 0.25);
+  border-color: rgba(99, 102, 241, 0.7);
+  box-shadow: 0 24px 54px -8px rgba(0, 0, 0, 0.75),
+              0 0 35px rgba(99, 102, 241, 0.3),
+              inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
 }
 
 /* Screenshot Preview Tag inside input */
@@ -715,32 +833,42 @@ textarea#messageInput::placeholder {
 .input-actions {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 
 .send-btn {
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #6366f1, #a855f7);
-  border: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+  border-top: 1px solid rgba(255, 255, 255, 0.35);
+  border-left: 1px solid rgba(255, 255, 255, 0.2);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.4);
   color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: 0 2px 8px var(--primary-glow);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 8px 20px -4px rgba(99, 102, 241, 0.5),
+              inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
 .send-btn:hover:not(:disabled) {
-  transform: scale(1.05);
-  filter: brightness(1.15);
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 12px 26px -4px rgba(99, 102, 241, 0.65),
+              inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+.send-btn:active:not(:disabled) {
+  transform: translateY(1px) scale(0.97);
 }
 
 .send-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
 }
 
 /* Screen Vision Live Floating Pip Window */
@@ -815,159 +943,263 @@ textarea#messageInput::placeholder {
   filter: brightness(1.2);
 }
 
-/* Voice Siri Modal (Full Futuristic Experience) */
-.voice-modal {
+/* ================= Compact 3D Siri Voice Panel ================= */
+.voice-modal-backdrop, .voice-modal {
   position: fixed;
   inset: 0;
-  background: rgba(5, 7, 15, 0.9);
-  backdrop-filter: blur(28px);
-  -webkit-backdrop-filter: blur(28px);
-  z-index: 100;
+  background: rgba(6, 8, 16, 0.55);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  z-index: 1000;
   display: none;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  animation: fadeIn 0.3s ease;
-  overflow: hidden;
+  padding: 16px;
+  animation: fadeIn 0.25s ease-out;
 }
 
-.voice-modal.active {
+.voice-modal-backdrop.active, .voice-modal.active {
   display: flex;
 }
 
-/* iOS 18 Siri Screen Edge Glow */
-.siri-edge-glow {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 1;
-  opacity: 0;
-  transition: opacity 0.5s ease;
-  box-shadow: inset 0 0 70px rgba(6, 182, 212, 0.45),
-              inset 0 0 130px rgba(168, 85, 247, 0.35),
-              inset 0 0 190px rgba(236, 72, 153, 0.25);
-  animation: siriEdgePulse 4s ease-in-out infinite alternate;
+.siri-compact-card {
+  width: 400px;
+  max-width: 95vw;
+  background: linear-gradient(145deg, rgba(28, 35, 62, 0.88) 0%, rgba(13, 17, 32, 0.94) 100%);
+  backdrop-filter: blur(32px) saturate(200%);
+  -webkit-backdrop-filter: blur(32px) saturate(200%);
+  border-top: 1px solid rgba(255, 255, 255, 0.35);
+  border-left: 1px solid rgba(255, 255, 255, 0.2);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.65);
+  border-radius: 28px;
+  box-shadow: 0 25px 65px -10px rgba(0, 0, 0, 0.85),
+              0 0 45px rgba(99, 102, 241, 0.28),
+              inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: relative;
+  animation: siriPopIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.voice-modal.active .siri-edge-glow {
-  opacity: 1;
-}
-
-@keyframes siriEdgePulse {
-  0% {
-    box-shadow: inset 0 0 70px rgba(6, 182, 212, 0.45),
-                inset 0 0 120px rgba(168, 85, 247, 0.3),
-                inset 0 0 180px rgba(236, 72, 153, 0.2);
+@keyframes siriPopIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(20px);
   }
-  50% {
-    box-shadow: inset 0 0 95px rgba(236, 72, 153, 0.5),
-                inset 0 0 150px rgba(6, 182, 212, 0.4),
-                inset 0 0 220px rgba(168, 85, 247, 0.35);
-  }
-  100% {
-    box-shadow: inset 0 0 80px rgba(168, 85, 247, 0.5),
-                inset 0 0 135px rgba(236, 72, 153, 0.35),
-                inset 0 0 190px rgba(6, 182, 212, 0.3);
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
   }
 }
 
-.siri-header-tag {
+.siri-card-header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 14px;
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  margin-bottom: 16px;
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: #cbd5e1;
-  backdrop-filter: blur(8px);
-  z-index: 2;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.siri-brand-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.siri-logo-glow {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #6366f1, #a855f7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 16px rgba(99, 102, 241, 0.5);
 }
 
 .siri-logo-mini {
-  width: 18px;
-  height: 18px;
-  border-radius: 5px;
+  width: 20px;
+  height: 20px;
 }
 
-.voice-close-btn {
-  position: absolute;
-  top: 24px;
-  right: 24px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid var(--border-subtle);
+.siri-title {
+  font-size: 0.95rem;
+  font-weight: 700;
   color: #fff;
-  width: 44px;
-  height: 44px;
+  letter-spacing: -0.01em;
+}
+
+.siri-status-sub {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.76rem;
+  color: #06b6d4;
+  font-weight: 500;
+}
+
+.siri-close-btn {
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #cbd5e1;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.2s;
-  z-index: 3;
+  transition: all 0.15s;
 }
 
-.voice-close-btn:hover {
-  background: rgba(255, 255, 255, 0.15);
-  transform: scale(1.05);
+.siri-close-btn:hover {
+  background: rgba(239, 68, 68, 0.3);
+  color: #fff;
+  border-color: rgba(239, 68, 68, 0.6);
+  transform: scale(1.08);
 }
 
-.voice-orb-container {
-  position: relative;
+/* Compact Siri Wave Canvas */
+.voice-orb-container-compact {
   width: 100%;
-  max-width: 420px;
-  height: 330px;
+  height: 105px;
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 2;
+  overflow: hidden;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 canvas#voiceCanvas {
   width: 100%;
-  max-width: 380px;
-  height: 320px;
-  border-radius: 0;
+  height: 105px;
+  display: block;
 }
 
-.voice-status-badge {
-  margin-top: 15px;
-  font-size: 1.1rem;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  color: #cbd5e1;
+/* Transcript Box in Compact Mode */
+.voice-transcript-box-compact {
+  width: 100%;
+  min-height: 48px;
+  max-height: 80px;
+  overflow-y: auto;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #f1f5f9;
+  font-size: 0.84rem;
+  line-height: 1.45;
+  text-align: left;
+  scrollbar-width: thin;
+}
+
+/* Siri Bottom Controls & Quick Text */
+.siri-bottom-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.siri-quick-input-row {
   display: flex;
   align-items: center;
-  gap: 10px;
-  z-index: 2;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  padding: 4px 6px 4px 12px;
+  transition: all 0.2s;
 }
 
-.voice-transcript-box {
-  margin-top: 16px;
-  max-width: 540px;
-  width: 90%;
-  min-height: 56px;
-  padding: 12px 20px;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: #e2e8f0;
-  font-size: 0.95rem;
-  text-align: center;
-  line-height: 1.5;
-  z-index: 2;
-  backdrop-filter: blur(12px);
+.siri-quick-input-row:focus-within {
+  border-color: rgba(99, 102, 241, 0.6);
+  background: rgba(255, 255, 255, 0.09);
+  box-shadow: 0 0 14px rgba(99, 102, 241, 0.25);
 }
 
-.voice-controls {
-  margin-top: 24px;
+.siri-quick-input-row input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-size: 0.85rem;
+  font-family: inherit;
+}
+
+.siri-quick-input-row input::placeholder {
+  color: #64748b;
+  font-size: 0.8rem;
+}
+
+.siri-send-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #6366f1, #a855f7);
+  border: none;
+  color: #fff;
   display: flex;
-  gap: 16px;
-  z-index: 2;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.siri-send-btn:hover {
+  transform: scale(1.08);
+  box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
+}
+
+.voice-controls-compact {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+
+.voice-control-btn {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.voice-control-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+  transform: scale(1.08);
+}
+
+.voice-control-btn.mic-active {
+  background: linear-gradient(135deg, #06b6d4, #6366f1);
+  border-color: rgba(255, 255, 255, 0.4);
+  box-shadow: 0 0 20px rgba(6, 182, 212, 0.6);
+  animation: micPulse3D 2s infinite ease-in-out;
+}
+
+@keyframes micPulse3D {
+  0% {
+    box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.6), 0 0 15px rgba(99, 102, 241, 0.5);
+  }
+  70% {
+    box-shadow: 0 0 0 12px rgba(6, 182, 212, 0), 0 0 25px rgba(99, 102, 241, 0.3);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(6, 182, 212, 0), 0 0 15px rgba(99, 102, 241, 0.5);
+  }
 }
 
 /* Sidebar PWA Install Button */
