@@ -360,7 +360,11 @@ function appendMessageToUI(msg) {
 
   let formattedContent = '';
   if (msg.role === 'assistant') {
-    formattedContent = marked.parse(msg.content || '');
+    let rawContent = msg.content || '';
+    if (window.deviceReminder) {
+      rawContent = window.deviceReminder.parseReminders(rawContent);
+    }
+    formattedContent = marked.parse(rawContent);
   } else {
     // Xavfsiz user matni
     formattedContent = `<p>${escapeHtml(msg.content || '')}</p>`;
@@ -548,8 +552,13 @@ async function sendMessage(customContent = null, customImage = null) {
             }
             if (data.chunk) {
               accumulatedText += data.chunk;
-              markdownBody.innerHTML = marked.parse(accumulatedText);
+              let contentToRender = accumulatedText;
+              if (window.deviceReminder) {
+                contentToRender = window.deviceReminder.parseReminders(contentToRender);
+              }
+              markdownBody.innerHTML = marked.parse(contentToRender);
               setupCodeBlocks(aiRow);
+              if (window.lucide) lucide.createIcons();
               scrollToBottom();
             }
             if (data.done) {
