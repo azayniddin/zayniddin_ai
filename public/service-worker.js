@@ -1,5 +1,5 @@
 // Service Worker for zayniddin_ai PWA
-const CACHE_NAME = 'zayniddin-ai-v4';
+const CACHE_NAME = 'zayniddin-ai-v5';
 const STATIC_ASSETS = [
   '/',
   '/index.html',

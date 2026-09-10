@@ -678,44 +678,6 @@ function setupEventListeners() {
 
   let lastToggleTime = 0;
 
-  // Global funksiyalar (inline onclick va barcha hodisalar uchun)
-  window.closeAppSidebar = () => {
-    sidebarEl?.classList.remove('mobile-open');
-    sidebarOverlayEl?.classList.remove('active');
-    if (window.innerWidth > 768) {
-      sidebarEl?.classList.add('collapsed');
-      localStorage.setItem('sidebar_desktop_collapsed', 'true');
-    } else {
-      sidebarEl?.classList.remove('collapsed');
-    }
-  };
-
-  window.openAppSidebar = () => {
-    sidebarEl?.classList.remove('collapsed');
-    if (window.innerWidth <= 768) {
-      sidebarEl?.classList.add('mobile-open');
-      sidebarOverlayEl?.classList.add('active');
-    } else {
-      localStorage.setItem('sidebar_desktop_collapsed', 'false');
-    }
-  };
-
-  window.toggleAppSidebar = () => {
-    const now = Date.now();
-    if (now - lastToggleTime < 300) return;
-    lastToggleTime = now;
-
-    if (sidebarEl?.classList.contains('mobile-open')) {
-      window.closeAppSidebar();
-    } else if (sidebarEl?.classList.contains('collapsed')) {
-      window.openAppSidebar();
-    } else if (window.innerWidth <= 768) {
-      window.openAppSidebar();
-    } else {
-      window.closeAppSidebar();
-    }
-  };
-
   // Saqlangan desktop holatini tiklash
   if (window.innerWidth > 768 && localStorage.getItem('sidebar_desktop_collapsed') === 'true') {
     sidebarEl?.classList.add('collapsed');
@@ -723,32 +685,21 @@ function setupEventListeners() {
 
   // Click va Touch hodisalari
   mobileMenuBtn?.addEventListener('click', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
+    if (e && e.cancelable) e.preventDefault();
+    if (e) e.stopPropagation();
     window.toggleAppSidebar();
   });
 
-  toggleSidebarBtn?.addEventListener('click', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleCloseSidebar = (e) => {
+    if (e && e.cancelable) e.preventDefault();
+    if (e) e.stopPropagation();
     window.closeAppSidebar();
-  });
-  toggleSidebarBtn?.addEventListener('touchend', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    window.closeAppSidebar();
-  }, { passive: false });
+  };
 
-  sidebarOverlayEl?.addEventListener('click', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    window.closeAppSidebar();
-  });
-  sidebarOverlayEl?.addEventListener('touchend', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    window.closeAppSidebar();
-  }, { passive: false });
+  toggleSidebarBtn?.addEventListener('click', handleCloseSidebar);
+  toggleSidebarBtn?.addEventListener('touchend', handleCloseSidebar);
+  sidebarOverlayEl?.addEventListener('click', handleCloseSidebar);
+  sidebarOverlayEl?.addEventListener('touchend', handleCloseSidebar);
 
   // Top navdagi to'g'ridan-to'g'ri Yangi Suhbat tugmasi
   topNewChatBtn?.addEventListener('click', (e) => {
