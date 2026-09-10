@@ -373,15 +373,74 @@ function appendMessageToUI(msg) {
     formattedContent = `<p>${escapeHtml(msg.content || '')}</p>`;
   }
 
-  let imageHtml = '';
-  if (msg.image) {
-    imageHtml = `<img src="${msg.image}" class="msg-bubble-image" alt="Ekran tasviri">`;
+  // Biriktirilgan fayllar (Rasmlar, PDF, Kod/Matn)
+  let attachmentsHtml = '';
+  const filesList = Array.isArray(msg.files) ? [...msg.files] : [];
+  if (msg.image && !filesList.some(f => f.dataUrl === msg.image || f.url === msg.image)) {
+    filesList.unshift({ isImage: true, url: msg.image, name: 'Tasvir' });
+  }
+
+  if (filesList.length > 0) {
+    let itemsHtml = '';
+    filesList.forEach(file => {
+      const isImg = file.isImage || file.type?.startsWith('image/') || /\.(jpg|jpeg|png|webp|gif|svg)$/i.test(file.name || '');
+      const isPdf = file.isPdf || file.type === 'application/pdf' || (file.name || '').toLowerCase().endsWith('.pdf');
+      const fileUrl = file.url || file.dataUrl || '#';
+      const fileName = file.name || (isPdf ? 'Hujjat.pdf' : (isImg ? 'Rasm' : 'Fayl'));
+
+      if (isImg) {
+        itemsHtml += `
+          <div class="msg-image-attachment">
+            <img src="${fileUrl}" class="msg-bubble-image clickable-zoom" alt="${escapeHtml(fileName)}" onclick="window.artGenerator?.openLightbox('${fileUrl}', '${escapeHtml(fileName)}')">
+          </div>
+        `;
+      } else if (isPdf) {
+        const sizeStr = file.size ? formatFileSize(file.size) : 'PDF Hujjat';
+        itemsHtml += `
+          <div class="msg-file-attachment">
+            <div class="file-attachment-left">
+              <div class="file-icon-badge pdf">
+                <i data-lucide="file-text" style="width: 18px; height: 18px;"></i>
+              </div>
+              <div class="file-attachment-info">
+                <span class="file-attachment-name" title="${escapeHtml(fileName)}">${escapeHtml(fileName)}</span>
+                <span class="file-attachment-meta">PDF · ${sizeStr}</span>
+              </div>
+            </div>
+            <a href="${fileUrl}" download="${escapeHtml(fileName)}" class="file-download-btn" title="Yuklab olish">
+              <i data-lucide="download" style="width: 15px; height: 15px;"></i>
+            </a>
+          </div>
+        `;
+      } else {
+        const ext = fileName.split('.').pop()?.toUpperCase() || 'FAYL';
+        const sizeStr = file.size ? formatFileSize(file.size) : ext;
+        itemsHtml += `
+          <div class="msg-file-attachment">
+            <div class="file-attachment-left">
+              <div class="file-icon-badge generic">
+                <i data-lucide="file-code" style="width: 18px; height: 18px;"></i>
+              </div>
+              <div class="file-attachment-info">
+                <span class="file-attachment-name" title="${escapeHtml(fileName)}">${escapeHtml(fileName)}</span>
+                <span class="file-attachment-meta">${ext} · ${sizeStr}</span>
+              </div>
+            </div>
+            <a href="${fileUrl}" download="${escapeHtml(fileName)}" class="file-download-btn" title="Yuklab olish">
+              <i data-lucide="download" style="width: 15px; height: 15px;"></i>
+            </a>
+          </div>
+        `;
+      }
+    });
+
+    attachmentsHtml = `<div class="msg-attachments-container">${itemsHtml}</div>`;
   }
 
   if (msg.role === 'user') {
     row.innerHTML = `
       <div class="msg-bubble">
-        ${imageHtml}
+        ${attachmentsHtml}
         ${formattedContent}
       </div>
     `;
@@ -391,7 +450,7 @@ function appendMessageToUI(msg) {
         <i data-lucide="bot" style="width: 20px; height: 20px; color: #fff;"></i>
       </div>
       <div class="msg-bubble">
-        ${imageHtml}
+        ${attachmentsHtml}
         <div class="markdown-body">${formattedContent}</div>
       </div>
     `;
@@ -405,6 +464,14 @@ function appendMessageToUI(msg) {
   if (window.lucide) lucide.createIcons();
   scrollToBottom();
   return row;
+}
+
+function formatFileSize(bytes) {
+  if (!bytes || bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
 }
 
 // Kod bloklariga Nusxalash tugmalarini o'rnatish
@@ -472,11 +539,14 @@ function escapeHtml(string) {
 }
 
 // 7. Xabar yuborish (Streaming)
-async function sendMessage(customContent = null, customImage = null) {
+async function sendMessage(customContent = null, customImage = null, customFiles = null) {
   const content = customContent !== null ? customContent : messageInputEl.value.trim();
-  const image = customImage !== null ? customImage : window.screenVision?.currentSnapshot;
+  const image = customImage !== null ? customImage : null;
+  const attachedFiles = customFiles !== null 
+    ? customFiles 
+    : (window.fileAttachmentManager ? window.fileAttachmentManager.getAttachments() : []);
 
-  if (!content && !image) return;
+  if (!content && !image && attachedFiles.length === 0) return;
 
   if (!window.appState.activeChatId) {
     await createNewChat();
@@ -489,16 +559,24 @@ async function sendMessage(customContent = null, customImage = null) {
   appendMessageToUI({
     role: 'user',
     content: content,
-    image: image
+    image: image,
+    files: attachedFiles.map(f => ({
+      name: f.name,
+      type: f.type,
+      size: f.size,
+      dataUrl: f.dataUrl,
+      isImage: f.isImage,
+      isPdf: f.isPdf
+    }))
   });
 
-  // Inputni tozalash
+  // Input va biriktirilgan fayllarni tozalash
   if (customContent === null) {
     messageInputEl.value = '';
     messageInputEl.style.height = 'auto';
   }
-  if (customImage === null && window.screenVision) {
-    window.screenVision.clearAttachedSnapshot();
+  if (window.fileAttachmentManager) {
+    window.fileAttachmentManager.clear();
   }
 
   // AI javobi uchun konteyner yaratish
@@ -522,10 +600,18 @@ async function sendMessage(customContent = null, customImage = null) {
   sendMessageBtn.disabled = true;
 
   try {
+    const payloadFiles = attachedFiles.map(f => ({
+      name: f.name,
+      type: f.type,
+      size: f.size,
+      dataUrl: f.dataUrl,
+      rawText: f.rawText || ''
+    }));
+
     const res = await fetch(`/api/chats/${chatId}/messages`, {
       method: 'POST',
       headers: getAuthHeaders(),
-      body: JSON.stringify({ content, image })
+      body: JSON.stringify({ content, image, files: payloadFiles })
     });
 
     if (!res.ok) {

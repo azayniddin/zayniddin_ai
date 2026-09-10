@@ -116,12 +116,6 @@
             <i data-lucide="square-pen" style="width: 19px; height: 19px;"></i>
           </button>
 
-          <!-- Vision / Camera Button -->
-          <button class="pill-btn vision-btn" id="toggleVisionBtn" title="Ekran yoki rasm tahlili">
-            <i data-lucide="scan-eye" style="width: 16px; height: 16px;"></i>
-            <span id="visionBtnText" class="desktop-only-text">Ko‘rish</span>
-          </button>
-
           <!-- AI Image Generator Button -->
           <button class="pill-btn draw-btn" id="openDrawModalBtn" title="AI Bilan Rasm Chizish">
             <i data-lucide="palette" style="width: 16px; height: 16px;"></i>
@@ -182,29 +176,30 @@
       <footer class="chat-input-area">
         <div class="input-box-wrapper glass">
           
-          <!-- Screen/Image Attachment Tag Preview -->
-          <div id="screenAttachmentBadge" class="screen-preview-tag" style="display: none;">
-            <i data-lucide="image" style="width: 14px; height: 14px;"></i>
-            <span>Rasm biriktirildi</span>
-            <img id="attachedScreenImg" src="" alt="Snapshot">
-            <button id="removeAttachedScreenBtn" title="Olib tashlash">
-              <i data-lucide="x" style="width: 14px; height: 14px;"></i>
-            </button>
+          <!-- Universal File / Image / PDF Attachment Preview Bar -->
+          <div id="attachmentPreviewContainer" class="attachment-preview-container" style="display: none;">
+            <div id="attachmentList" class="attachment-list"></div>
           </div>
 
           <div class="input-row">
-            <!-- Hidden File Input for Mobile Camera & Gallery Upload -->
-            <input type="file" id="mobileImageUploadInput" accept="image/*" style="display: none;">
+            <!-- Hidden File Input for Images, PDFs, and Files -->
+            <input 
+              type="file" 
+              id="fileUploadInput" 
+              accept="image/*,.pdf,.txt,.md,.json,.js,.ts,.py,.html,.css,.csv,.doc,.docx" 
+              multiple 
+              style="display: none;"
+            >
 
-            <!-- Capture / Upload Button -->
-            <button class="icon-button" id="captureScreenDirectBtn" title="Rasm yuklash yoki suratga olish">
-              <i data-lucide="camera" style="width: 20px; height: 20px;"></i>
+            <!-- Attachment Button -->
+            <button class="icon-button attach-file-btn" id="attachFileBtn" title="Rasm, Fayl yoki PDF biriktirish">
+              <i data-lucide="paperclip" style="width: 20px; height: 20px;"></i>
             </button>
 
             <!-- Textarea -->
             <textarea 
               id="messageInput" 
-              placeholder="Savol yoki topshiriq bering..." 
+              placeholder="Savol bering yoki fayl, rasm, PDF biriktiring..." 
               rows="1"
             ></textarea>
             
@@ -222,30 +217,6 @@
           </div>
         </div>
       </footer>
-
-      <!-- Screen Vision Floating Live Mini Window (Kompyuter uchun) -->
-      <div class="screen-pip-panel glass" id="screenPipPanel">
-        <div class="screen-pip-header">
-          <div style="display: flex; align-items: center; gap: 6px;">
-            <i data-lucide="cast" style="width: 16px; height: 16px;"></i>
-            <span>Jonli Ekran Nazorati</span>
-          </div>
-          <button class="icon-button" id="closeScreenPipBtn" style="width: 24px; height: 24px; border: none;">
-            <i data-lucide="x" style="width: 14px; height: 14px;"></i>
-          </button>
-        </div>
-        <video id="screenPipVideo" class="screen-pip-video" autoplay playsinline muted></video>
-        <div class="screen-pip-actions">
-          <button class="screen-pip-btn primary" id="analyzePipScreenBtn">
-            <i data-lucide="scan-eye" style="width: 15px; height: 15px;"></i>
-            <span>Tahlil Qil</span>
-          </button>
-          <button class="screen-pip-btn" id="attachPipToInputBtn">
-            <i data-lucide="paperclip" style="width: 15px; height: 15px;"></i>
-            <span>Biriktir</span>
-          </button>
-        </div>
-      </div>
 
     </main>
 
@@ -425,11 +396,11 @@
     </div>
   </div>
 
-  <!-- APP SCRIPTS (v3.0) -->
-  <script src="/js/reminders.js?v=3.0"></script>
-  <script src="/js/artGenerator.js?v=3.0"></script>
-  <script src="/js/voiceOrb.js?v=3.0"></script>
-  <script src="/js/screenVision.js?v=3.0"></script>
-  <script src="/js/app.js?v=3.0"></script>
+  <!-- APP SCRIPTS (v4.0) -->
+  <script src="/js/reminders.js?v=4.0"></script>
+  <script src="/js/artGenerator.js?v=4.0"></script>
+  <script src="/js/voiceOrb.js?v=4.0"></script>
+  <script src="/js/fileAttachment.js?v=4.0"></script>
+  <script src="/js/app.js?v=4.0"></script>
 </body>
 </html>

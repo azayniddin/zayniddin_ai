@@ -1,5 +1,67 @@
 [
   {
+    "id": "chat_1789013444115_x1wh3",
+    "title": "Ushbu PDF hujjatda muallif kim d...",
+    "createdAt": "2026-09-10T04:10:44.115Z",
+    "updatedAt": "2026-09-10T04:10:45.779Z",
+    "messages": [
+      {
+        "id": "msg_1789013444166",
+        "role": "user",
+        "content": "Ushbu PDF hujjatda muallif kim deb yozilgan?",
+        "image": null,
+        "files": [
+          {
+            "name": "hujjat.pdf",
+            "url": "/uploads/docs/up_1789013444118_zpqab.pdf",
+            "type": "application/pdf",
+            "size": 620,
+            "isPdf": true,
+            "isImage": false
+          }
+        ],
+        "timestamp": "2026-09-10T04:10:44.166Z"
+      },
+      {
+        "id": "msg_1789013445779_ai",
+        "role": "assistant",
+        "content": "PDF hujjatda muallif sifatida \"Zayniddin\" deb yozilgan.",
+        "timestamp": "2026-09-10T04:10:45.779Z"
+      }
+    ]
+  },
+  {
+    "id": "chat_1789013435506_oms1j",
+    "title": "Ushbu kod nima qilishini bitta j...",
+    "createdAt": "2026-09-10T04:10:35.506Z",
+    "updatedAt": "2026-09-10T04:10:38.095Z",
+    "messages": [
+      {
+        "id": "msg_1789013435513",
+        "role": "user",
+        "content": "Ushbu kod nima qilishini bitta jumla bilan tushuntirib ber",
+        "image": null,
+        "files": [
+          {
+            "name": "calculator.js",
+            "url": "/uploads/files/up_1789013435512_qlzwm.js",
+            "type": "text/javascript",
+            "size": 65,
+            "isPdf": false,
+            "isImage": false
+          }
+        ],
+        "timestamp": "2026-09-10T04:10:35.513Z"
+      },
+      {
+        "id": "msg_1789013438095_ai",
+        "role": "assistant",
+        "content": "Ushbu kod mahsulot narxi va soliq miqdorini qabul qilib, umumiy narxni hisoblaydi.",
+        "timestamp": "2026-09-10T04:10:38.095Z"
+      }
+    ]
+  },
+  {
     "id": "chat_1789013018489_wzzf2",
     "title": "Samarqand Registon maydonini ert...",
     "createdAt": "2026-09-10T04:03:38.489Z",

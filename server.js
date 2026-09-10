@@ -7,6 +7,10 @@ import fs from 'fs/promises';
 import { existsSync, mkdirSync, createWriteStream } from 'fs';
 import https from 'https';
 import OpenAI from 'openai';
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
+const { PDFParse } = require('pdf-parse');
 
 dotenv.config();
 
@@ -16,14 +20,21 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Ma'lumotlar papkasi
+// Ma'lumotlar va fayllar papkalari
 const DATA_DIR = path.join(__dirname, 'data');
 const CHATS_FILE = path.join(DATA_DIR, 'chats.json');
 const PROFILE_FILE = path.join(DATA_DIR, 'profile.json');
+const UPLOADS_DIR = path.join(__dirname, 'public', 'uploads');
+const UPLOADS_FILES = path.join(UPLOADS_DIR, 'files');
+const UPLOADS_IMAGES = path.join(UPLOADS_DIR, 'images');
+const UPLOADS_DOCS = path.join(UPLOADS_DIR, 'docs');
+const UPLOADS_GENERATED = path.join(UPLOADS_DIR, 'generated');
 
-if (!existsSync(DATA_DIR)) {
-  mkdirSync(DATA_DIR, { recursive: true });
-}
+[DATA_DIR, UPLOADS_DIR, UPLOADS_FILES, UPLOADS_IMAGES, UPLOADS_DOCS, UPLOADS_GENERATED].forEach(dir => {
+  if (!existsSync(dir)) {
+    mkdirSync(dir, { recursive: true });
+  }
+});
 
 // Middleware
 app.use(cors());
@@ -105,8 +116,9 @@ ASOSIY QOIDALAR VA FAZILATLARING:
    - Har doim eng yaxshi amaliyotlar (Best Practices), toza arxitektura, xavfsizlik va optimal tezlikka e'tibor ber.
    - Kod yozganda hech qachon chala yoki "..." bilan qoldirma, to'liq ishlaydigan kod ber.
    - Xatoliklarni (bug) sababini chuqur tushuntir va hayotiy/tushunarli analogiyalar bilan o'rgat.
-3. Ekran Ko'rish (Screen Vision):
-   - Foydalanuvchi senga ekran rasmini (screenshot) yuborganida, ekrandagi har bir tafsilotni (kodlar, terminaldagi qizil xatolar, brauzerdagi dizayn yoki konsol xabarlarini) sinchkovlik bilan tahlil qil va darhol xatoni tuzatish yo'lini ko'rsat.
+3. Rasmlar, PDF Hujjatlar va Fayllarni Tahlil Qilish:
+   - Foydalanuvchi senga turli rasmlar, skrinshotlar, PDF kitob yoki hisobotlar, dasturlash kodlari yoki matnli fayllar biriktirib yuborishi mumkin.
+   - Biriktirilgan har qanday fayl va PDF hujjatni sinchkovlik bilan o'rgan, undagi ma'lumotlarni tahlil qil, savollarga to'liq javob ber va koddagi xatolarni aniq ko'rsat.
 4. Telefon Ilovalari (Eslatma, Budilnik, Taqvim Integratsiyasi):
    - Hozirgi aniq vaqt: ${uzbekDate}, soat ${uzbekTime} (O'zbekiston, Toshkent vaqti). Bugungi sana: ${isoDate}.
    - Agar foydalanuvchi vaqt bilan bog'liq eslatma qo'yishni, budilnik o'rnatishni yoki taqvimga reja kiritishni so'rasa (masalan: "soat 15:00 ga eslatma qo'y", "ertaga 10:00 da uchrashuv bor", "budilnik qo'y", "darsni eslatib qo'y"):
@@ -127,6 +139,62 @@ ASOSIY QOIDALAR VA FAZILATLARING:
    - Maxsus istaklari: ${profile.customRules}
 
 Doimo qotmasdan, aniq, mantiqiy va maksimal darajada foydali javob ber!`;
+}
+
+// ================= Fayllar, PDF va Rasmlarni Qayta Ishlash Yordamchilari =================
+
+async function extractTextFromPdf(buffer) {
+  try {
+    const parser = new PDFParse({ data: buffer });
+    const textResult = await parser.getText();
+    const info = await parser.getInfo().catch(() => ({}));
+    await parser.destroy().catch(() => {});
+    return {
+      text: typeof textResult === 'string' ? textResult : (textResult?.text || ''),
+      pages: textResult?.total || info?.numPages || 1
+    };
+  } catch (err) {
+    console.error('PDF tahlilida xatolik:', err);
+    return { text: '', pages: 0, error: err.message };
+  }
+}
+
+async function saveUploadedFile(fileData) {
+  const { name, dataUrl, type } = fileData;
+  const isPdf = type === 'application/pdf' || (name || '').toLowerCase().endsWith('.pdf');
+  const isImage = type?.startsWith('image/') || /\.(jpg|jpeg|png|webp|gif|svg)$/i.test(name || '');
+
+  let targetSubdir = 'files';
+  if (isPdf) targetSubdir = 'docs';
+  else if (isImage) targetSubdir = 'images';
+
+  const ext = (name || '').split('.').pop() || (isPdf ? 'pdf' : (isImage ? 'jpg' : 'bin'));
+  const safeExt = ext.replace(/[^a-zA-Z0-9]/g, '');
+  const fileName = `up_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${safeExt}`;
+  const filePath = path.join(UPLOADS_DIR, targetSubdir, fileName);
+
+  let buffer;
+  if (dataUrl && dataUrl.includes(';base64,')) {
+    const base64Str = dataUrl.split(';base64,')[1];
+    buffer = Buffer.from(base64Str, 'base64');
+  } else if (fileData.rawText) {
+    buffer = Buffer.from(fileData.rawText, 'utf8');
+  } else {
+    buffer = Buffer.from('');
+  }
+
+  await fs.writeFile(filePath, buffer);
+  const publicUrl = `/uploads/${targetSubdir}/${fileName}`;
+
+  return {
+    name: name || fileName,
+    url: publicUrl,
+    type: type || 'application/octet-stream',
+    size: buffer.length,
+    isPdf,
+    isImage,
+    buffer
+  };
 }
 
 // ================= AI Tasvir Yaratish (Image Generation) Yordamchilari =================
@@ -323,10 +391,10 @@ app.post('/api/chats/:id/messages', async (req, res) => {
   }
 
   const { id } = req.params;
-  const { content, image } = req.body;
+  const { content, image, files = [] } = req.body;
 
-  if (!content && !image) {
-    return res.status(400).json({ error: 'Xabar matni yoki rasm talab qilinadi' });
+  if (!content && !image && files.length === 0) {
+    return res.status(400).json({ error: 'Xabar matni, rasm yoki fayl talab qilinadi' });
   }
 
   const chats = await getChatsData();
@@ -337,20 +405,62 @@ app.post('/api/chats/:id/messages', async (req, res) => {
 
   const chat = chats[chatIndex];
 
+  // Biriktirilgan fayllarni saqlash va tahlil qilish
+  const processedFiles = [];
+  let additionalPromptText = '';
+  const currentVisionImages = [];
+
+  if (image) {
+    currentVisionImages.push(image);
+  }
+
+  for (const file of files) {
+    try {
+      const saved = await saveUploadedFile(file);
+      processedFiles.push({
+        name: saved.name,
+        url: saved.url,
+        type: saved.type,
+        size: saved.size,
+        isPdf: saved.isPdf,
+        isImage: saved.isImage
+      });
+
+      if (saved.isImage) {
+        currentVisionImages.push(file.dataUrl);
+      } else if (saved.isPdf) {
+        const pdfResult = await extractTextFromPdf(saved.buffer);
+        if (pdfResult.text) {
+          additionalPromptText += `\n\n📄 [Biriktirilgan PDF hujjat: "${saved.name}" (${pdfResult.pages} sahifa)]:\n"""\n${pdfResult.text.slice(0, 35000)}\n"""\n`;
+        } else {
+          additionalPromptText += `\n\n📄 [Biriktirilgan PDF: "${saved.name}" (matn ajratib bo'lmadi, ehtimol skan tasvir).]\n`;
+        }
+      } else {
+        const textContent = file.rawText || saved.buffer.toString('utf8');
+        const ext = saved.name.split('.').pop() || '';
+        additionalPromptText += `\n\n📝 [Biriktirilgan fayl: "${saved.name}"]:\n\`\`\`${ext}\n${textContent.slice(0, 25000)}\n\`\`\`\n`;
+      }
+    } catch (fErr) {
+      console.error('Faylni qayta ishlashda xatolik:', fErr);
+    }
+  }
+
   // Foydalanuvchi xabari
   const userMsgObj = {
     id: 'msg_' + Date.now(),
     role: 'user',
     content: content || '',
     image: image || null,
+    files: processedFiles,
     timestamp: new Date().toISOString()
   };
 
   chat.messages.push(userMsgObj);
 
   // Agar bu birinchi xabar bo'lsa, chat nomini sarlavha qilib o'zgartirish
-  if (chat.messages.length === 1 && content) {
-    chat.title = content.slice(0, 32).trim() + (content.length > 32 ? '...' : '');
+  if (chat.messages.length === 1) {
+    const firstTitle = content || (processedFiles[0] ? `Fayl: ${processedFiles[0].name}` : 'Yangi suhbat');
+    chat.title = firstTitle.slice(0, 32).trim() + (firstTitle.length > 32 ? '...' : '');
   }
   chat.updatedAt = new Date().toISOString();
 
@@ -363,19 +473,31 @@ app.post('/api/chats/:id/messages', async (req, res) => {
     const systemPrompt = await buildSystemPrompt();
 
     // OpenAI formatiga moslashtirish (oxirgi 15 ta xabarni kontekst uchun olamiz)
-    const recentMessages = chat.messages.slice(-15).map(m => {
-      if (m.role === 'user' && m.image) {
-        return {
-          role: 'user',
-          content: [
-            { type: 'text', text: m.content || 'Ushbu ekranga qarang va tahlil qiling:' },
-            { type: 'image_url', image_url: { url: m.image, detail: 'high' } }
-          ]
-        };
+    const recentMessages = chat.messages.slice(-15).map((m, idx, arr) => {
+      const isLatest = idx === arr.length - 1;
+      let textContent = m.content || '';
+      if (isLatest && additionalPromptText) {
+        textContent += additionalPromptText;
+      }
+
+      if (m.role === 'user') {
+        const imagesToInclude = isLatest ? currentVisionImages : (m.image ? [m.image] : []);
+        if (imagesToInclude.length > 0) {
+          return {
+            role: 'user',
+            content: [
+              { type: 'text', text: textContent || 'Ushbu biriktirilgan tasvir yoki faylni tahlil qilib bering:' },
+              ...imagesToInclude.map(url => ({
+                type: 'image_url',
+                image_url: { url, detail: 'high' }
+              }))
+            ]
+          };
+        }
       }
       return {
         role: m.role,
-        content: m.content
+        content: textContent
       };
     });
 

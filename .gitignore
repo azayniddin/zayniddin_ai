@@ -7,5 +7,12 @@ node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-public/uploads/generated/*.jpg
-public/uploads/generated/*.png
+public/uploads/generated/*
+!public/uploads/generated/.gitkeep
+public/uploads/files/*
+!public/uploads/files/.gitkeep
+public/uploads/images/*
+!public/uploads/images/.gitkeep
+public/uploads/docs/*
+!public/uploads/docs/.gitkeep
+

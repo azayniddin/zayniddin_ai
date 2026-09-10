@@ -1,12 +1,14 @@
 // Service Worker for zayniddin_ai PWA
-const CACHE_NAME = 'zayniddin-ai-v5';
+const CACHE_NAME = 'zayniddin-ai-v6';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/css/style.css',
   '/js/app.js',
   '/js/voiceOrb.js',
-  '/js/screenVision.js',
+  '/js/reminders.js',
+  '/js/artGenerator.js',
+  '/js/fileAttachment.js',
   '/manifest.json',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
