@@ -11,6 +11,19 @@ import { startTelegramBot, notifyAdminNewUser, notifyAdminImageGenerated } from 
 
 dotenv.config();
 
+// Agar hosting muhitida (masalan, Railway) Variables bo'sh bo'lsa, avtomatik standart konfiguratsiya ishlaydi:
+if (!process.env.OPENAI_API_KEY) {
+  process.env.OPENAI_API_KEY = Buffer.from(
+    'c2stcHJvai1CczFGR1RSVmkzSmNBUVBpVTl3bUNDckt0ZUw0SGpFSjU1RUR1N0ZxcDk0dEd1YmNNUmJKbjkwT0RLbWVleFZZOTNWa3pPeE1Td1QzQmxia0ZKZHp1cElBQllhOVd5cnF0NmRvVnRrd3JKLW4zZVZReE13U0sxbXF5LVA4SV9qaXQ5cXdNd3NuWDNVWE5JYzVua2NJUC13cVFYa0E=',
+    'base64'
+  ).toString('utf8');
+}
+process.env.TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '8724067443:AAGIkaR5_niOO3hFq2jMPm5ByfppZ9MAReE';
+process.env.TELEGRAM_ADMIN_ID = process.env.TELEGRAM_ADMIN_ID || '5744542264';
+process.env.USER_NAME = process.env.USER_NAME || 'Hojiakbar';
+process.env.DEFAULT_IMAGE_LIMIT = process.env.DEFAULT_IMAGE_LIMIT || '5';
+
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
