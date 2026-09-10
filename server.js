@@ -397,11 +397,11 @@ app.post('/api/speak', async (req, res) => {
   }
 
   try {
-    // OpenAI TTS modelidan foydalanish
+    // OpenAI TTS modelidan foydalanish (nova - juda tiniq, ravon va tabiiy o'zbekcha talaffuz)
     const mp3 = await openai.audio.speech.create({
       model: 'tts-1',
-      voice: 'onyx', // chuqur va aniq ovoz
-      input: text.slice(0, 1000) // limit
+      voice: req.body.voice || 'nova',
+      input: text.slice(0, 1000)
     });
     const buffer = Buffer.from(await mp3.arrayBuffer());
     res.set({

@@ -284,7 +284,7 @@ class VoiceOrbController {
     }
   }
 
-  speakText(text) {
+  async speakText(text) {
     if (!text) return;
     this.stopSpeaking();
     this.isSpeaking = true;
@@ -292,8 +292,68 @@ class VoiceOrbController {
     this.targetIntensity = 0.95;
 
     const cleanText = text.replace(/```[\s\S]*?```/g, 'Mana bu kod blokini chatda ko‘rishingiz mumkin.')
-                          .replace(/[#*_`]/g, '');
+                          .replace(/[#*_`]/g, '')
+                          .trim();
 
+    // 1. OpenAI TTS orqali tiniq, ravon va tabiiy o'zbek ovozi
+    try {
+      const headers = { 'Content-Type': 'application/json' };
+      if (window.appState && window.appState.apiKey) {
+        headers['x-api-key'] = window.appState.apiKey;
+      }
+
+      const res = await fetch('/api/speak', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ text: cleanText, voice: 'nova' })
+      });
+
+      if (res.ok) {
+        const audioBlob = await res.blob();
+        const audioUrl = URL.createObjectURL(audioBlob);
+        this.currentAudio = new Audio(audioUrl);
+
+        // Ovoz to'lqinlari dinamik harakati (Siri animatsiyasi)
+        const wavePulseInterval = setInterval(() => {
+          if (this.isSpeaking) {
+            this.targetIntensity = 0.65 + Math.random() * 0.35;
+          } else {
+            clearInterval(wavePulseInterval);
+          }
+        }, 100);
+
+        this.currentAudio.onended = () => {
+          clearInterval(wavePulseInterval);
+          URL.revokeObjectURL(audioUrl);
+          this.currentAudio = null;
+          this.isSpeaking = false;
+          this.updateStatus('Tinglashga tayyorman', '#10b981');
+          this.targetIntensity = 0.2;
+          setTimeout(() => {
+            if (this.modal?.classList.contains('active')) {
+              this.startListening();
+            }
+          }, 400);
+        };
+
+        this.currentAudio.onerror = (e) => {
+          clearInterval(wavePulseInterval);
+          console.warn('Audio ijro xatoligi:', e);
+          this.fallbackSpeechSynthesis(cleanText);
+        };
+
+        await this.currentAudio.play();
+        return;
+      }
+    } catch (err) {
+      console.warn('OpenAI TTS ulanishida xatolik, brauzer ovoziga o‘tilmoqda:', err);
+    }
+
+    // 2. Fallback: brauzer ovozi
+    this.fallbackSpeechSynthesis(cleanText);
+  }
+
+  fallbackSpeechSynthesis(cleanText) {
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(cleanText);
@@ -327,6 +387,11 @@ class VoiceOrbController {
   }
 
   stopSpeaking() {
+    if (this.currentAudio) {
+      this.currentAudio.pause();
+      this.currentAudio.currentTime = 0;
+      this.currentAudio = null;
+    }
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
     }

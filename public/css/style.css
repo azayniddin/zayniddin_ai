@@ -1315,6 +1315,37 @@ canvas#voiceCanvas {
   border-color: rgba(255, 255, 255, 0.15);
 }
 
+.sidebar-toggle-btn:active {
+  transform: scale(0.92);
+}
+
+.top-new-chat-btn {
+  background: rgba(6, 182, 212, 0.12);
+  border: 1px solid rgba(6, 182, 212, 0.35);
+  color: #38bdf8;
+  width: 38px;
+  height: 38px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.top-new-chat-btn:hover {
+  background: rgba(6, 182, 212, 0.22);
+  border-color: rgba(6, 182, 212, 0.6);
+  color: #fff;
+  transform: translateY(-1px);
+  box-shadow: 0 0 12px rgba(6, 182, 212, 0.3);
+}
+
+.top-new-chat-btn:active {
+  transform: scale(0.92);
+}
+
 .sidebar-overlay {
   display: none;
   position: fixed;
@@ -1336,16 +1367,16 @@ canvas#voiceCanvas {
 }
 
 .mobile-close-sidebar-btn {
-  width: 40px;
-  height: 40px;
-  min-width: 40px;
-  min-height: 40px;
-  border-radius: 10px;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   color: #fff;
   cursor: pointer;
   touch-action: manipulation;
@@ -1355,9 +1386,17 @@ canvas#voiceCanvas {
   transition: all 0.15s;
 }
 
+.mobile-close-sidebar-btn:hover,
 .mobile-close-sidebar-btn:active {
   background: rgba(255, 255, 255, 0.25);
   transform: scale(0.92);
+}
+
+.mobile-close-sidebar-btn svg,
+.mobile-close-sidebar-btn i {
+  pointer-events: none;
+  width: 22px;
+  height: 22px;
 }
 
 .mobile-quick-voice-btn {

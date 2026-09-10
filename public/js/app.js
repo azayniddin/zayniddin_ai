@@ -10,6 +10,57 @@ window.appState = {
   apiKey: localStorage.getItem('personal_ai_key') || ''
 };
 
+// ================= Global Sidebar (Yon Panel) Boshqaruvi =================
+let lastSidebarToggleTime = 0;
+
+window.closeAppSidebar = function() {
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebarOverlay');
+  if (sidebar) {
+    sidebar.classList.remove('mobile-open');
+    if (window.innerWidth > 768) {
+      sidebar.classList.add('collapsed');
+      localStorage.setItem('sidebar_desktop_collapsed', 'true');
+    } else {
+      sidebar.classList.remove('collapsed');
+    }
+  }
+  if (overlay) {
+    overlay.classList.remove('active');
+  }
+};
+
+window.openAppSidebar = function() {
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebarOverlay');
+  if (sidebar) {
+    sidebar.classList.remove('collapsed');
+    if (window.innerWidth <= 768) {
+      sidebar.classList.add('mobile-open');
+      if (overlay) overlay.classList.add('active');
+    } else {
+      localStorage.setItem('sidebar_desktop_collapsed', 'false');
+    }
+  }
+};
+
+window.toggleAppSidebar = function() {
+  const now = Date.now();
+  if (now - lastSidebarToggleTime < 280) return;
+  lastSidebarToggleTime = now;
+
+  const sidebar = document.getElementById('sidebar');
+  if (sidebar && sidebar.classList.contains('mobile-open')) {
+    window.closeAppSidebar();
+  } else if (sidebar && sidebar.classList.contains('collapsed')) {
+    window.openAppSidebar();
+  } else if (window.innerWidth <= 768) {
+    window.openAppSidebar();
+  } else {
+    window.closeAppSidebar();
+  }
+};
+
 // DOM elementlari
 const chatsListEl = document.getElementById('chatsList');
 const newChatBtn = document.getElementById('newChatBtn');
@@ -164,7 +215,25 @@ function renderChatsList() {
 }
 
 // 3. Yangi chat yaratish
+let isCreatingChat = false;
 async function createNewChat() {
+  if (isCreatingChat) return;
+  isCreatingChat = true;
+
+  // Mobilda sidebar ochiq bo'lsa darhol yopish
+  if (window.closeAppSidebar) {
+    window.closeAppSidebar();
+  } else {
+    document.getElementById('sidebar')?.classList.remove('mobile-open');
+    document.getElementById('sidebarOverlay')?.classList.remove('active');
+  }
+
+  // Optimistik UI: Foydalanuvchiga darhol yangi suhbat maydonini ko'rsatish
+  activeChatTitleEl.textContent = 'Yangi suhbat';
+  activeChatTimeEl.textContent = 'Bugun';
+  renderMessages([]);
+  messageInputEl.value = '';
+
   try {
     const res = await fetch('/api/chats', {
       method: 'POST',
@@ -174,12 +243,41 @@ async function createNewChat() {
     if (res.ok) {
       const newChat = await res.json();
       window.appState.chats.unshift(newChat);
-      selectChat(newChat.id);
+      window.appState.activeChatId = newChat.id;
+      renderChatsList();
+    } else {
+      const fallbackChat = {
+        id: 'chat_' + Date.now(),
+        title: 'Yangi suhbat',
+        createdAt: new Date().toISOString(),
+        messages: []
+      };
+      window.appState.chats.unshift(fallbackChat);
+      window.appState.activeChatId = fallbackChat.id;
+      renderChatsList();
     }
   } catch (err) {
     console.error('Yangi chat yaratishda xatolik:', err);
+    const fallbackChat = {
+      id: 'chat_' + Date.now(),
+      title: 'Yangi suhbat',
+      createdAt: new Date().toISOString(),
+      messages: []
+    };
+    window.appState.chats.unshift(fallbackChat);
+    window.appState.activeChatId = fallbackChat.id;
+    renderChatsList();
+  } finally {
+    isCreatingChat = false;
+    setTimeout(() => {
+      if (window.innerWidth > 768) {
+        messageInputEl.focus();
+      }
+    }, 100);
   }
 }
+
+window.createNewChat = createNewChat;
 
 // 4. Muayyan chatni tanlash
 async function selectChat(chatId) {
@@ -567,6 +665,9 @@ function setupEventListeners() {
   const sidebarOverlayEl = document.getElementById('sidebarOverlay');
   const toggleSidebarBtn = document.getElementById('toggleSidebarBtn');
   const quickVoiceInputBtn = document.getElementById('quickVoiceInputBtn');
+  const topNewChatBtn = document.getElementById('topNewChatBtn');
+
+  let lastToggleTime = 0;
 
   // Global funksiyalar (inline onclick va barcha hodisalar uchun)
   window.closeAppSidebar = () => {
@@ -591,6 +692,10 @@ function setupEventListeners() {
   };
 
   window.toggleAppSidebar = () => {
+    const now = Date.now();
+    if (now - lastToggleTime < 300) return;
+    lastToggleTime = now;
+
     if (sidebarEl?.classList.contains('mobile-open')) {
       window.closeAppSidebar();
     } else if (sidebarEl?.classList.contains('collapsed')) {
@@ -607,26 +712,39 @@ function setupEventListeners() {
     sidebarEl?.classList.add('collapsed');
   }
 
-  // Click va Touch hodisalari (Mobilda to'g'ri ishlashi uchun touchend/click)
+  // Click va Touch hodisalari
   mobileMenuBtn?.addEventListener('click', (e) => {
+    e.preventDefault();
     e.stopPropagation();
     window.toggleAppSidebar();
   });
+
   toggleSidebarBtn?.addEventListener('click', (e) => {
+    e.preventDefault();
     e.stopPropagation();
     window.closeAppSidebar();
   });
   toggleSidebarBtn?.addEventListener('touchend', (e) => {
+    e.preventDefault();
     e.stopPropagation();
     window.closeAppSidebar();
-  });
+  }, { passive: false });
+
   sidebarOverlayEl?.addEventListener('click', (e) => {
+    e.preventDefault();
     e.stopPropagation();
     window.closeAppSidebar();
   });
   sidebarOverlayEl?.addEventListener('touchend', (e) => {
+    e.preventDefault();
     e.stopPropagation();
     window.closeAppSidebar();
+  }, { passive: false });
+
+  // Top navdagi to'g'ridan-to'g'ri Yangi Suhbat tugmasi
+  topNewChatBtn?.addEventListener('click', (e) => {
+    e.preventDefault();
+    createNewChat();
   });
 
   // Mobilda barmoq bilan chapga surib yopish (Swipe to Close)
@@ -745,12 +863,19 @@ function setupPWAInstall() {
 
 // Dasturni initsializatsiya qilish
 async function initApp() {
-  await checkServerStatus();
-  await loadProfile();
-  await loadChats();
+  // 1. Voqea tinglovchilari (Event Listenerlar) va piktogrammalarni birinchi bo'lib DARHOL yoqish
   setupEventListeners();
-  setupPWAInstall();
   if (window.lucide) lucide.createIcons();
+  setupPWAInstall();
+
+  // 2. Serverdan ma'lumotlarni asinxron yuklash (UI qotib qolmasligi uchun)
+  try {
+    checkServerStatus();
+    loadProfile();
+    await loadChats();
+  } catch (err) {
+    console.warn('Init yuklashda ogohlantirish:', err);
+  }
 }
 
 document.addEventListener('DOMContentLoaded', initApp);
