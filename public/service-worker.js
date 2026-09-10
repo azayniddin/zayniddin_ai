@@ -1,5 +1,5 @@
 // Service Worker for zayniddin_ai PWA
-const CACHE_NAME = 'zayniddin-ai-v1';
+const CACHE_NAME = 'zayniddin-ai-v4';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -14,13 +14,6 @@ const STATIC_ASSETS = [
 ];
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_ASSETS).catch((err) => {
-        console.warn('Cache addAll non-critical error:', err);
-      });
-    })
-  );
   self.skipWaiting();
 });
 
@@ -32,9 +25,8 @@ self.addEventListener('activate', (event) => {
           .filter((name) => name !== CACHE_NAME)
           .map((name) => caches.delete(name))
       );
-    })
+    }).then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
 self.addEventListener('fetch', (event) => {
@@ -43,16 +35,25 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Network-First: Doimo yangi versiyani olish, faqat internet yo'q bo'lsa keshdan berish
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      return (
-        cachedResponse ||
-        fetch(event.request).catch(() => {
+    fetch(event.request)
+      .then((networkResponse) => {
+        if (networkResponse && networkResponse.status === 200 && event.request.method === 'GET') {
+          const responseClone = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseClone);
+          });
+        }
+        return networkResponse;
+      })
+      .catch(() => {
+        return caches.match(event.request).then((cached) => {
+          if (cached) return cached;
           if (event.request.mode === 'navigate') {
             return caches.match('/');
           }
-        })
-      );
-    })
+        });
+      })
   );
 });
