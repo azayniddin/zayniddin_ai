@@ -103,7 +103,186 @@ function getAuthHeaders() {
   if (window.appState.apiKey) {
     headers['x-api-key'] = window.appState.apiKey;
   }
+  if (window.appState.user && window.appState.user.id) {
+    headers['x-user-id'] = window.appState.user.id;
+    headers['x-user-name'] = encodeURIComponent(window.appState.user.name || '');
+    headers['x-user-surname'] = encodeURIComponent(window.appState.user.surname || '');
+    headers['x-user-email'] = encodeURIComponent(window.appState.user.email || '');
+  }
   return headers;
+}
+
+// ================= Foydalanuvchi Boshqaruvi (User Auth & Session) =================
+function initUserSession() {
+  let user = null;
+  try {
+    const stored = localStorage.getItem('zayniddin_ai_user');
+    if (stored) user = JSON.parse(stored);
+  } catch (e) {}
+
+  if (user && user.id && user.name) {
+    window.appState.user = user;
+    updateUserUI(user);
+    syncUserWithServer(user);
+  } else {
+    // Foydalanuvchi birinchi marta kirganda ro'yxatdan o'tish oynasini ko'rsatish
+    setTimeout(() => openAuthModal(true), 350);
+  }
+}
+
+function updateUserUI(user) {
+  if (!user) return;
+  const name = user.name || 'Do‘stim';
+  const firstLetter = name[0]?.toUpperCase() || 'U';
+
+  // Asosiy sahifadagi shaxsiy salomlashish
+  const welcomeGreeting = document.getElementById('welcomeGreeting');
+  if (welcomeGreeting) {
+    welcomeGreeting.innerHTML = `Salom, <span class="gradient-text">${escapeHtml(name)}</span>! Bugun nima ish qilamiz?`;
+  }
+
+  // Yuqori paneldagi profil tugmasi
+  const topUserName = document.getElementById('topUserName');
+  const topUserAvatar = document.getElementById('topUserAvatar');
+  const topUserBtn = document.getElementById('topUserBtn');
+  if (topUserName) topUserName.textContent = name;
+  if (topUserAvatar) topUserAvatar.textContent = firstLetter;
+  if (topUserBtn) {
+    const rem = user.imageLimit !== undefined ? Math.max(0, user.imageLimit - (user.imageCount || 0)) : 5;
+    topUserBtn.title = `${name} ${user.surname || ''} (Qolgan rasm limiti: ${rem} ta)`;
+  }
+
+  // Yon paneldagi profil ma'lumoti
+  if (sidebarUserNameEl) sidebarUserNameEl.textContent = name;
+  if (userAvatarTextEl) userAvatarTextEl.textContent = firstLetter;
+
+  // Agar foydalanuvchi ma'muriyat tomonidan bloklangan bo'lsa
+  if (user.isBlocked) {
+    showBlockedModal();
+  }
+}
+
+function showBlockedModal() {
+  const modal = document.getElementById('blockedModal');
+  if (modal) modal.classList.add('active');
+  if (messageInputEl) messageInputEl.disabled = true;
+  if (sendMessageBtn) sendMessageBtn.disabled = true;
+}
+
+async function syncUserWithServer(user) {
+  try {
+    const res = await fetch(`/api/auth/me?userId=${encodeURIComponent(user.id)}`, {
+      headers: getAuthHeaders()
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.user) {
+        window.appState.user = data.user;
+        localStorage.setItem('zayniddin_ai_user', JSON.stringify(data.user));
+        updateUserUI(data.user);
+      }
+    } else if (res.status === 403) {
+      showBlockedModal();
+    }
+  } catch (e) {
+    console.warn('User sync ogohlantirish:', e.message);
+  }
+}
+
+function openAuthModal(isFirstTime = false) {
+  const modal = document.getElementById('authModal');
+  const closeBtn = document.getElementById('closeAuthModalBtn');
+  const modalTitle = document.getElementById('authModalTitle');
+  const modalDesc = document.getElementById('authModalDesc');
+
+  if (closeBtn) closeBtn.style.display = isFirstTime ? 'none' : 'flex';
+  if (modalTitle) modalTitle.textContent = isFirstTime ? 'Xush Kelibsiz!' : 'Profil Sozlamalari';
+  if (modalDesc) {
+    modalDesc.textContent = isFirstTime 
+      ? "AI Yordamchi sizga shaxsan ismingiz bilan murojaat qilishi va barcha imkoniyatlardan foydalanishingiz uchun ism-familiyangizni kiriting:" 
+      : "Profil ma'lumotlaringizni yangilashingiz mumkin:";
+  }
+
+  if (window.appState.user) {
+    const nameInput = document.getElementById('authNameInput');
+    const surnameInput = document.getElementById('authSurnameInput');
+    const emailInput = document.getElementById('authEmailInput');
+    if (nameInput) nameInput.value = window.appState.user.name || '';
+    if (surnameInput) surnameInput.value = window.appState.user.surname || '';
+    if (emailInput) emailInput.value = window.appState.user.email || '';
+  }
+
+  if (modal) modal.classList.add('active');
+  const firstInput = document.getElementById('authNameInput');
+  if (firstInput) setTimeout(() => firstInput.focus(), 150);
+}
+
+function closeAuthModal() {
+  const modal = document.getElementById('authModal');
+  if (modal) modal.classList.remove('active');
+}
+
+async function handleSaveAuth() {
+  const nameInput = document.getElementById('authNameInput');
+  const surnameInput = document.getElementById('authSurnameInput');
+  const emailInput = document.getElementById('authEmailInput');
+
+  const name = nameInput?.value.trim();
+  const surname = surnameInput?.value.trim();
+  const email = emailInput?.value.trim();
+
+  if (!name) {
+    alert('Iltimos, ismingizni kiriting!');
+    nameInput?.focus();
+    return;
+  }
+
+  const existingId = window.appState.user?.id || 'usr_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
+  const payload = {
+    id: existingId,
+    name,
+    surname,
+    email
+  };
+
+  const submitBtn = document.getElementById('submitAuthBtn');
+  const origHtml = submitBtn ? submitBtn.innerHTML : '';
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span>Saqlanmoqda...</span>';
+  }
+
+  try {
+    const res = await fetch('/api/auth/login-or-register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (data.success && data.user) {
+      window.appState.user = data.user;
+      localStorage.setItem('zayniddin_ai_user', JSON.stringify(data.user));
+      updateUserUI(data.user);
+      closeAuthModal();
+      loadChats();
+    } else {
+      alert('Kirishda xatolik: ' + (data.error || 'Noma‘lum xato'));
+    }
+  } catch (err) {
+    console.error('Auth error:', err);
+    // Offline / fallback rejim
+    const fallbackUser = { id: existingId, name, surname, email, imageLimit: 5, imageCount: 0, isBlocked: false };
+    window.appState.user = fallbackUser;
+    localStorage.setItem('zayniddin_ai_user', JSON.stringify(fallbackUser));
+    updateUserUI(fallbackUser);
+    closeAuthModal();
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = origHtml;
+      if (window.lucide) lucide.createIcons();
+    }
+  }
 }
 
 // Server holati va API kalitini tekshirish
@@ -615,6 +794,9 @@ async function sendMessage(customContent = null, customImage = null, customFiles
     });
 
     if (!res.ok) {
+      if (res.status === 403) {
+        showBlockedModal();
+      }
       const errData = await res.json().catch(() => ({}));
       throw new Error(errData.error || `Server xatosi: ${res.status}`);
     }
@@ -757,6 +939,39 @@ function setupEventListeners() {
       }
     } catch (err) {
       alert('Sozlamalarni saqlashda xatolik: ' + err.message);
+    }
+  });
+
+  // ================= Foydalanuvchi Profili / Auth Modal Hodisalari =================
+  const topUserBtn = document.getElementById('topUserBtn');
+  const closeAuthModalBtn = document.getElementById('closeAuthModalBtn');
+  const submitAuthBtn = document.getElementById('submitAuthBtn');
+  const authModal = document.getElementById('authModal');
+  const authNameInput = document.getElementById('authNameInput');
+  const authSurnameInput = document.getElementById('authSurnameInput');
+
+  topUserBtn?.addEventListener('click', () => openAuthModal(false));
+  closeAuthModalBtn?.addEventListener('click', closeAuthModal);
+  submitAuthBtn?.addEventListener('click', handleSaveAuth);
+
+  authNameInput?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (authSurnameInput) authSurnameInput.focus();
+      else handleSaveAuth();
+    }
+  });
+
+  authSurnameInput?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSaveAuth();
+    }
+  });
+
+  authModal?.addEventListener('click', (e) => {
+    if (e.target === authModal && window.appState.user) {
+      closeAuthModal();
     }
   });
 
@@ -919,6 +1134,7 @@ async function initApp() {
   setupEventListeners();
   if (window.lucide) lucide.createIcons();
   setupPWAInstall();
+  initUserSession();
 
   // 2. Serverdan ma'lumotlarni asinxron yuklash (UI qotib qolmasligi uchun)
   try {

@@ -7,6 +7,8 @@ import fs from 'fs/promises';
 import { existsSync, mkdirSync, createWriteStream } from 'fs';
 import https from 'https';
 import OpenAI from 'openai';
+import { startTelegramBot, notifyAdminNewUser, notifyAdminImageGenerated } from './telegramBot.js';
+
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -22,6 +24,7 @@ const isVercel = !!process.env.VERCEL;
 const DATA_DIR = isVercel ? path.join('/tmp', 'data') : path.join(__dirname, 'data');
 const CHATS_FILE = path.join(DATA_DIR, 'chats.json');
 const PROFILE_FILE = path.join(DATA_DIR, 'profile.json');
+const USERS_FILE = path.join(DATA_DIR, 'users.json');
 const UPLOADS_DIR = isVercel ? path.join('/tmp', 'uploads') : path.join(__dirname, 'public', 'uploads');
 const UPLOADS_FILES = path.join(UPLOADS_DIR, 'files');
 const UPLOADS_IMAGES = path.join(UPLOADS_DIR, 'images');
@@ -46,6 +49,70 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 if (isVercel) {
   app.use('/uploads', express.static(path.join('/tmp', 'uploads')));
+}
+
+// Foydalanuvchilar (Users) bilan ishlash
+async function getUsersData() {
+  try {
+    if (!existsSync(USERS_FILE)) {
+      if (!existsSync(DATA_DIR)) {
+        mkdirSync(DATA_DIR, { recursive: true });
+      }
+      await fs.writeFile(USERS_FILE, JSON.stringify([], null, 2), 'utf8');
+      return [];
+    }
+    const data = await fs.readFile(USERS_FILE, 'utf8');
+    return JSON.parse(data || '[]');
+  } catch (err) {
+    console.error('Users faylini o‘qishda xatolik:', err);
+    return [];
+  }
+}
+
+async function saveUsersData(users) {
+  try {
+    if (!existsSync(DATA_DIR)) {
+      mkdirSync(DATA_DIR, { recursive: true });
+    }
+    await fs.writeFile(USERS_FILE, JSON.stringify(users, null, 2), 'utf8');
+  } catch (err) {
+    console.error('Users saqlashda xatolik:', err.message);
+  }
+}
+
+async function getOrCreateUser(req) {
+  const userId = req.headers['x-user-id'] || req.body?.userId || req.query?.userId;
+  if (!userId) return null;
+
+  const users = await getUsersData();
+  let user = users.find(u => u.id === userId);
+  const now = new Date().toISOString();
+
+  if (!user) {
+    const defaultLimit = parseInt(process.env.DEFAULT_IMAGE_LIMIT, 10) || 5;
+    user = {
+      id: userId,
+      name: req.headers['x-user-name'] || req.body?.userName || 'Foydalanuvchi',
+      surname: req.headers['x-user-surname'] || req.body?.userSurname || '',
+      email: req.headers['x-user-email'] || req.body?.userEmail || '',
+      avatar: req.body?.userAvatar || '',
+      imageCount: 0,
+      imageLimit: defaultLimit,
+      isBlocked: false,
+      registeredAt: now,
+      lastActive: now
+    };
+    users.push(user);
+    await saveUsersData(users);
+    notifyAdminNewUser(user).catch(() => {});
+  } else {
+    user.lastActive = now;
+    if (req.headers['x-user-name'] && req.headers['x-user-name'] !== user.name) {
+      user.name = req.headers['x-user-name'];
+    }
+    await saveUsersData(users);
+  }
+  return user;
 }
 
 // Fayllardan o'qish / yozish yordamchi funksiyalari
@@ -120,15 +187,16 @@ function getOpenAIClient(req) {
 }
 
 // Shaxsiy Tizim Promtini shakllantirish
-async function buildSystemPrompt() {
+async function buildSystemPrompt(user = null) {
   const profile = await getProfileData();
+  const effectiveUserName = user?.name ? `${user.name}${user.surname ? ' ' + user.surname : ''}` : profile.userName;
   const now = new Date();
   const uzbekDate = now.toLocaleDateString('uz-UZ', { timeZone: 'Asia/Tashkent', year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
   const uzbekTime = now.toLocaleTimeString('uz-UZ', { timeZone: 'Asia/Tashkent', hour: '2-digit', minute: '2-digit' });
   const isoDate = now.toLocaleDateString('en-CA', { timeZone: 'Asia/Tashkent' }); // YYYY-MM-DD
 
-  return `Sen foydalanuvchining (${profile.userName}) eng ishonchli, shaxsiy va yuqori intellektga ega AI yordamchisisan. Isming: ${profile.assistantName}.
-Oddiy, sovuq chatbotlardan farqli o'laroq, sen faqatgina ${profile.userName} uchun xizmat qilasan va uning eng yaqin maslahatdoshi, Senior dasturchi mentori, muammolarni aniq yechuvchi va hayotiy tayanchisan.
+  return `Sen foydalanuvchining (${effectiveUserName}) eng ishonchli, shaxsiy va yuqori intellektga ega AI yordamchisisan. Isming: ${profile.assistantName}.
+Oddiy, sovuq chatbotlardan farqli o'laroq, sen faqatgina ${effectiveUserName} uchun xizmat qilasan va uning eng yaqin maslahatdoshi, Senior dasturchi mentori, muammolarni aniq yechuvchi va hayotiy tayanchisan.
 
 ASOSIY QOIDALAR VA FAZILATLARING:
 1. Til va Muomala:
@@ -422,6 +490,77 @@ app.get('/api/status', (req, res) => {
   });
 });
 
+// ================= AUTH & USER MANAGEMENT ROUTES =================
+
+// Foydalanuvchi tizimga kirishi yoki ro'yxatdan o'tishi
+app.post('/api/auth/login-or-register', async (req, res) => {
+  try {
+    const { id, name, surname, email, avatar } = req.body;
+    if (!id || !name) {
+      return res.status(400).json({ error: 'ID va Ism talab qilinadi' });
+    }
+
+    const users = await getUsersData();
+    let user = users.find(u => u.id === id);
+    const now = new Date().toISOString();
+    let isNew = false;
+
+    if (!user) {
+      const defaultLimit = parseInt(process.env.DEFAULT_IMAGE_LIMIT, 10) || 5;
+      user = {
+        id,
+        name: name.trim(),
+        surname: (surname || '').trim(),
+        email: (email || '').trim(),
+        avatar: avatar || '',
+        imageCount: 0,
+        imageLimit: defaultLimit,
+        isBlocked: false,
+        registeredAt: now,
+        lastActive: now
+      };
+      users.push(user);
+      isNew = true;
+    } else {
+      user.name = name.trim();
+      if (surname !== undefined) user.surname = (surname || '').trim();
+      if (email !== undefined) user.email = (email || '').trim();
+      if (avatar !== undefined) user.avatar = avatar;
+      user.lastActive = now;
+    }
+
+    await saveUsersData(users);
+
+    if (isNew) {
+      notifyAdminNewUser(user).catch(() => {});
+    }
+
+    res.json({ success: true, user });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Joriy foydalanuvchi ma'lumotlarini olish
+app.get('/api/auth/me', async (req, res) => {
+  try {
+    const userId = req.headers['x-user-id'] || req.query.userId;
+    if (!userId) {
+      return res.status(401).json({ error: 'Foydalanuvchi IDsi berilmagan' });
+    }
+    const users = await getUsersData();
+    const user = users.find(u => u.id === userId);
+    if (!user) {
+      return res.status(404).json({ error: 'Foydalanuvchi topilmadi' });
+    }
+    user.lastActive = new Date().toISOString();
+    await saveUsersData(users);
+    res.json({ success: true, user });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Profilni olish va yangilash
 app.get('/api/profile', async (req, res) => {
   const profile = await getProfileData();
@@ -438,12 +577,15 @@ app.post('/api/profile', async (req, res) => {
   }
 });
 
-// Barcha chatlar ro'yxati
+// Barcha chatlar ro'yxati (Faqat joriy foydalanuvchiga tegishlilari)
 app.get('/api/chats', async (req, res) => {
   try {
+    const userId = req.headers['x-user-id'] || req.query.userId;
     const chats = await getChatsData();
+    const userChats = userId ? chats.filter(c => c.userId === userId || !c.userId) : chats;
+    
     // Xabarlar tanasini qisqartirib, faqat metadata qaytaramiz
-    const summaries = chats.map(c => ({
+    const summaries = userChats.map(c => ({
       id: c.id,
       title: c.title || 'Yangi suhbat',
       createdAt: c.createdAt,
@@ -459,9 +601,11 @@ app.get('/api/chats', async (req, res) => {
 // Yangi chat ochish
 app.post('/api/chats', async (req, res) => {
   try {
+    const userId = req.headers['x-user-id'] || req.body.userId;
     const chats = await getChatsData();
     const newChat = {
       id: 'chat_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+      userId: userId || null,
       title: req.body.title || 'Yangi suhbat',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -529,6 +673,11 @@ app.post('/api/chats/:id/messages', async (req, res) => {
 
   const chat = chats[chatIndex];
 
+  const user = await getOrCreateUser(req);
+  if (user && user.isBlocked) {
+    return res.status(403).json({ error: "Sizning profilingiz ma'muriyat tomonidan bloklangan." });
+  }
+
   // Biriktirilgan fayllarni saqlash va tahlil qilish
   const processedFiles = [];
   let additionalPromptText = '';
@@ -594,7 +743,7 @@ app.post('/api/chats/:id/messages', async (req, res) => {
   res.setHeader('Connection', 'keep-alive');
 
   try {
-    const systemPrompt = await buildSystemPrompt();
+    const systemPrompt = await buildSystemPrompt(user);
 
     // OpenAI formatiga moslashtirish (oxirgi 15 ta xabarni kontekst uchun olamiz)
     const recentMessages = chat.messages.slice(-15).map((m, idx, arr) => {
@@ -632,6 +781,14 @@ app.post('/api/chats/:id/messages', async (req, res) => {
 
     // 1. Agar foydalanuvchi rasm chizishni so'ragan bo'lsa
     if (content && isImageRequest(content)) {
+      const userLimit = user ? (user.imageLimit ?? 5) : 5;
+      if (user && (user.imageCount || 0) >= userLimit) {
+        const limitChunk = `⚠️ **Rasm chizish limitingiz (${userLimit} ta) tugadi!**\n\nQo‘shimcha rasm limiti olish uchun iltimos ma'muriyat (Admin) bilan bog‘laning.`;
+        res.write(`data: ${JSON.stringify({ chunk: limitChunk })}\n\n`);
+        res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+        return res.end();
+      }
+
       res.write(`data: ${JSON.stringify({ chunk: `🎨 **Siz so‘ragan tasvir yaratilmoqda...**\n\nAI g‘oyani ishlab chiqmoqda va mukammal tarzda chizmoqda, bir necha soniya kuting...\n\n` })}\n\n`);
 
       try {
@@ -647,6 +804,17 @@ app.post('/api/chats/:id/messages', async (req, res) => {
         const imageChunk = `Mana, siz so‘ragan ajoyib tasvir tayyor bo‘ldi!\n\n:::image-card\n${cardData}\n:::\n\n*Tasvir ${model} AI modeli orqali HD sifatda chizildi.*`;
         
         res.write(`data: ${JSON.stringify({ chunk: imageChunk })}\n\n`);
+
+        if (user) {
+          user.imageCount = (user.imageCount || 0) + 1;
+          const allUsers = await getUsersData();
+          const uIdx = allUsers.findIndex(u => u.id === user.id);
+          if (uIdx !== -1) {
+            allUsers[uIdx].imageCount = user.imageCount;
+            await saveUsersData(allUsers);
+          }
+          notifyAdminImageGenerated(user, content, imageUrl, model).catch(() => {});
+        }
 
         const assistantMsgObj = {
           id: 'msg_' + Date.now() + '_ai',
@@ -711,6 +879,18 @@ app.post('/api/generate-image', async (req, res) => {
     return res.status(401).json({ error: 'OpenAI API kaliti topilmadi' });
   }
 
+  const user = await getOrCreateUser(req);
+  if (user && user.isBlocked) {
+    return res.status(403).json({ error: "Sizning profilingiz ma'muriyat tomonidan bloklangan." });
+  }
+
+  const userLimit = user ? (user.imageLimit ?? 5) : 5;
+  if (user && (user.imageCount || 0) >= userLimit) {
+    return res.status(403).json({
+      error: `Rasm chizish limitingiz (${userLimit} ta) tugadi! Qo‘shimcha limit olish uchun ma'muriyat bilan bog‘laning.`
+    });
+  }
+
   const { prompt, style, aspectRatio = '1:1', chatId } = req.body;
   if (!prompt) {
     return res.status(400).json({ error: 'Rasm tavsifi (prompt) kiritilmagan' });
@@ -732,6 +912,17 @@ app.post('/api/generate-image', async (req, res) => {
 
     const enhancedPrompt = await enrichImagePrompt(openai, prompt, style, existingChatMessages);
     const { imageUrl, model } = await generateMasterpieceImage(openai, enhancedPrompt, width, height);
+
+    if (user) {
+      user.imageCount = (user.imageCount || 0) + 1;
+      const allUsers = await getUsersData();
+      const uIdx = allUsers.findIndex(u => u.id === user.id);
+      if (uIdx !== -1) {
+        allUsers[uIdx].imageCount = user.imageCount;
+        await saveUsersData(allUsers);
+      }
+      notifyAdminImageGenerated(user, prompt, imageUrl, model).catch(() => {});
+    }
 
     if (chatId) {
       const chats = await getChatsData();
@@ -755,7 +946,7 @@ app.post('/api/generate-image', async (req, res) => {
       }
     }
 
-    res.json({ success: true, imageUrl, prompt, enhancedPrompt, model });
+    res.json({ success: true, imageUrl, prompt, enhancedPrompt, model, remainingLimit: user ? Math.max(0, user.imageLimit - user.imageCount) : null });
   } catch (err) {
     console.error('Tasvir yaratishda xatolik:', err);
     res.status(500).json({ error: err.message });
@@ -873,6 +1064,13 @@ if (!process.env.VERCEL) {
   app.listen(PORT, HOST, () => {
     console.log(`🚀 Shaxsiy AI Assistent serveri ishga tushdi: http://${HOST}:${PORT}`);
     console.log(`📡 OpenAI Key: ${process.env.OPENAI_API_KEY ? 'Mavjud (Server ENV)' : 'Mavjud emas (Foydalanuvchi UI orqali kiritishi mumkin)'}`);
+    
+    // Telegram Admin Botni ishga tushirish
+    startTelegramBot({
+      getUsers: getUsersData,
+      saveUsers: saveUsersData,
+      getChats: getChatsData
+    });
   });
 }
 

@@ -133,6 +133,12 @@
             <span class="desktop-only-text">Ovoz</span>
           </button>
 
+          <!-- User Profile & Limit Pill Button -->
+          <button class="pill-btn user-pill-btn" id="topUserBtn" title="Foydalanuvchi Profili va Limitlar">
+            <div class="top-user-avatar" id="topUserAvatar">👤</div>
+            <span id="topUserName" class="desktop-only-text">Kirish</span>
+          </button>
+
           <!-- Settings Button -->
           <button class="icon-button" id="topSettingsBtn" title="Sozlamalar">
             <i data-lucide="sliders-horizontal" style="width: 18px; height: 18px;"></i>
@@ -150,7 +156,7 @@
               <img src="/icons/icon.svg" alt="zayniddin_ai" class="welcome-avatar-img">
               <div class="avatar-ring-pulse"></div>
             </div>
-            <h2>Salom! Men <span class="gradient-text">zayniddin_ai</span></h2>
+            <h2 id="welcomeGreeting">Salom! Men <span class="gradient-text">zayniddin_ai</span></h2>
             <p>Sizning shaxsiy va yuqori intellektli AI hamrohingiz. Kod yozish, ekrandagi xatolarni ko'rib tahlil qilish, Siri ovozli muloqot va barcha murakkab vazifalarda siz bilan birgaman.</p>
 
             <div class="quick-prompts">
@@ -417,6 +423,72 @@
           <span>Telefonga Yuklab Olish</span>
         </button>
       </div>
+    </div>
+  <!-- USER REGISTRATION / LOGIN MODAL (Ism-Familiya va Profil) -->
+  <div class="settings-modal" id="authModal">
+    <div class="settings-card glass-card">
+      <div class="settings-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div class="auth-icon-badge">
+            <i data-lucide="user-check" style="width: 20px; height: 20px; color: #38bdf8;"></i>
+          </div>
+          <h3 id="authModalTitle">Xush Kelibsiz!</h3>
+        </div>
+        <button class="icon-button" id="closeAuthModalBtn">
+          <i data-lucide="x" style="width: 18px; height: 18px;"></i>
+        </button>
+      </div>
+
+      <div class="settings-body">
+        <p style="color: #cbd5e1; font-size: 0.88rem; margin-bottom: 16px; line-height: 1.5;" id="authModalDesc">
+          AI Yordamchi sizga shaxsan ismingiz bilan murojaat qilishi va xizmatlardan to'liq foydalanishingiz uchun ism-familiyangizni kiriting:
+        </p>
+
+        <div class="setting-group">
+          <label for="authNameInput">Ismingiz *</label>
+          <input type="text" id="authNameInput" placeholder="Masalan: Hojiakbar" required>
+        </div>
+
+        <div class="setting-group">
+          <label for="authSurnameInput">Familiyangiz (ixtiyoriy)</label>
+          <input type="text" id="authSurnameInput" placeholder="Masalan: Valiyev">
+        </div>
+
+        <div class="setting-group">
+          <label for="authEmailInput">Email (Google yoki pochta, ixtiyoriy)</label>
+          <input type="email" id="authEmailInput" placeholder="email@example.com">
+        </div>
+
+        <div class="auth-limit-banner">
+          <i data-lucide="sparkles" style="width: 18px; height: 18px; color: #ec4899; flex-shrink: 0;"></i>
+          <div>
+            <b>5 ta bepul AI rasm chizish</b>
+            <div style="font-size: 0.75rem; opacity: 0.85;">Qo'shimcha limitlarni admin orqali oshirish mumkin.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-footer">
+        <button class="btn-primary auth-submit-btn" id="submitAuthBtn" style="width: 100%;">
+          <span>Profilni Saqlash va Kirish</span>
+          <i data-lucide="arrow-right" style="width: 16px; height: 16px;"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- BLOCKED USER MODAL -->
+  <div class="settings-modal" id="blockedModal" style="z-index: 99999;">
+    <div class="settings-card glass-card" style="text-align: center; border-color: rgba(239, 68, 68, 0.4); max-width: 420px; margin: auto;">
+      <div style="font-size: 48px; margin-bottom: 8px;">🚫</div>
+      <h3 style="color: #f87171; margin-bottom: 10px;">Profilingiz Cheklangan</h3>
+      <p style="color: #cbd5e1; font-size: 0.9rem; line-height: 1.5; margin-bottom: 20px;">
+        Sizning hisobingiz platforma ma'muriyati tomonidan bloklangan. Tizimdan qayta foydalanish uchun administrator bilan bog'laning.
+      </p>
+      <a href="https://t.me/azayniddin" target="_blank" class="btn-primary" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; text-decoration: none; padding: 12px 18px;">
+        <i data-lucide="send" style="width: 16px; height: 16px;"></i>
+        <span>Admin Bilan Bog‘lanish</span>
+      </a>
     </div>
   </div>
 

@@ -2606,3 +2606,58 @@ canvas#voiceCanvas {
   border-color: rgba(99, 102, 241, 0.6);
 }
 
+/* User Profile & Auth Modal Styles */
+.user-pill-btn {
+  background: rgba(56, 189, 248, 0.12) !important;
+  border-color: rgba(56, 189, 248, 0.3) !important;
+  color: #38bdf8 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 6px 14px !important;
+  font-weight: 600 !important;
+}
+
+.user-pill-btn:hover {
+  background: rgba(56, 189, 248, 0.22) !important;
+  border-color: rgba(56, 189, 248, 0.5) !important;
+  color: #fff !important;
+}
+
+.top-user-avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #38bdf8, #818cf8);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+}
+
+.auth-limit-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(236, 72, 153, 0.1);
+  border: 1px solid rgba(236, 72, 153, 0.25);
+  color: #f472b6;
+  font-size: 0.85rem;
+  margin-top: 14px;
+}
+
+.auth-submit-btn {
+  background: linear-gradient(135deg, #0284c7, #6366f1) !important;
+  box-shadow: 0 0 20px rgba(2, 132, 199, 0.35) !important;
+}
+
+.auth-submit-btn:hover {
+  filter: brightness(1.1);
+}
+
+
