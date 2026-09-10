@@ -1,0 +1,9 @@
+# nixpacks.toml for Railway automatic builds with Node 22
+[phases.setup]
+nixPkgs = ["nodejs_22"]
+
+[phases.install]
+cmds = ["npm ci --omit=dev"]
+
+[start]
+cmd = "node server.js"

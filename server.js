@@ -267,27 +267,53 @@ function isImageRequest(text) {
     /paint\s*(an?\s*)?(picture|image)/i,
     /illyustratsiya\s*(chiz|yarat)/i,
     /bitta\s*rasm\s*chiz/i,
-    /tasvir\s*(chiz|yarat)/i
+    /tasvir\s*(chiz|yarat)/i,
+    /rasm(ga|ni)?\s*.*(qo'sh|qosh|o'zgartir|ozgartir|almashtir|boshqacha|yana)/i,
+    /(qo'sh|qosh|o'zgartir|ozgartir)\s*.*rasm/i,
+    /unga\s*.*(qo'sh|chiz|yarat)/i,
+    /yana\s*(bitta|birorta)?\s*rasm/i
   ];
   return patterns.some(p => p.test(t));
 }
 
-async function enrichImagePrompt(openai, userPrompt, style = '') {
+async function enrichImagePrompt(openai, userPrompt, style = '', contextMessages = []) {
   try {
-    const styleInstruction = style ? `Artistic style: ${style}.` : '';
+    const styleInstruction = style ? `Artistic style preference: ${style}.` : '';
+
+    // Oldingi suhbat va rasm kontekstini yig'ish (ayniqsa rasmga o'zgartirish yoki yangi element kiritilayotganda)
+    let contextStr = '';
+    if (contextMessages && contextMessages.length > 0) {
+      const recent = contextMessages.slice(-6).map(m => {
+        let text = '';
+        if (typeof m.content === 'string') text = m.content;
+        else if (Array.isArray(m.content)) text = m.content.find(c => c.type === 'text')?.text || '';
+        return `${m.role}: ${text.slice(0, 300)}`;
+      }).join('\n');
+      contextStr = `PREVIOUS CONVERSATION & ART CONTEXT:\n${recent}\n\n`;
+    }
+
     const res = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [
         {
           role: 'system',
-          content: 'You are an expert master AI prompt engineer for high-end digital art (FLUX.1). Convert the user prompt (which may be in Uzbek) into an ultra-detailed, photorealistic, cinematic English prompt with vibrant lighting, textures, 8k resolution details, and artistic composition. Output ONLY the English prompt, no other text.'
+          content: `You are a world-class AI art director and lead visual prompt engineer for top-tier image generators (FLUX.1 and DALL-E 3).
+Convert the user request (often in Uzbek) into an extraordinary, highly detailed, masterwork English visual prompt.
+
+CRITICAL INSTRUCTIONS FOR IMAGE ITERATIONS / EDITS / ADDITIONS:
+1. If the user asks to modify, add an element to, or iterate on a previous image (e.g. "rasmga biron narsa qo'shib ber", "mashinani qizil qil", "quyosh qo'sh", "orqasiga shahar chiz", "unga yana bitta mushuk qo'sh"):
+   - You MUST examine the PREVIOUS CONVERSATION CONTEXT.
+   - PRESERVE the existing main subject, setting, and overall aesthetic from the previous discussion!
+   - Seamlessly integrate the newly requested element, change, or detail into the existing scene without replacing or wiping out the original subject!
+2. Craft visually stunning descriptions: dramatic cinematic lighting, volumetric atmosphere, octane render, 8k resolution, raytracing reflections, masterwork composition.
+3. Output ONLY the refined English prompt text. Do not add quotes, explanations, or markdown.`
         },
         {
           role: 'user',
-          content: `${userPrompt}. ${styleInstruction}`
+          content: `${contextStr}User Request: "${userPrompt}". ${styleInstruction}`
         }
       ],
-      max_tokens: 300,
+      max_tokens: 380,
       temperature: 0.7
     });
     return res.choices[0]?.message?.content?.trim() || userPrompt;
@@ -302,34 +328,80 @@ async function generateImageWithFlux(enhancedPrompt, width = 1024, height = 1024
   const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(enhancedPrompt)}?width=${width}&height=${height}&seed=${seed}&nologo=true&model=flux`;
 
   const filename = `ai_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.jpg`;
-  const uploadDir = path.join(__dirname, 'public', 'uploads', 'generated');
-  if (!existsSync(uploadDir)) {
-    await fs.mkdir(uploadDir, { recursive: true });
-  }
+  const uploadDir = UPLOADS_GENERATED;
+  try {
+    if (!existsSync(uploadDir)) {
+      mkdirSync(uploadDir, { recursive: true });
+    }
+  } catch (e) {}
+
   const filePath = path.join(uploadDir, filename);
 
-  return new Promise((resolve, reject) => {
-    const file = createWriteStream(filePath);
-    
-    function makeRequest(targetUrl) {
-      https.get(targetUrl, (response) => {
-        if (response.statusCode >= 300 && response.statusCode < 400 && response.headers.location) {
-          makeRequest(response.headers.location);
-        } else if (response.statusCode === 200) {
-          response.pipe(file);
-          file.on('finish', () => {
-            file.close(() => resolve(`/uploads/generated/${filename}`));
-          });
-        } else {
-          reject(new Error(`Tasvir yaratishda server javobi: ${response.statusCode}`));
-        }
-      }).on('error', (err) => {
-        reject(err);
-      });
-    }
+  return new Promise((resolve) => {
+    // Agar faylga yuklab olishda muammo bo'lsa, to'g'ridan-to'g'ri Pollinations URL beriladi
+    const timeout = setTimeout(() => {
+      console.warn('Flux yuklab olish taymauti, to‘g‘ridan-to‘g‘ri havola ishlatilmoqda');
+      resolve(imageUrl);
+    }, 15000);
 
-    makeRequest(imageUrl);
+    try {
+      const file = createWriteStream(filePath);
+      function makeRequest(targetUrl) {
+        https.get(targetUrl, (response) => {
+          if (response.statusCode >= 300 && response.statusCode < 400 && response.headers.location) {
+            makeRequest(response.headers.location);
+          } else if (response.statusCode === 200) {
+            response.pipe(file);
+            file.on('finish', () => {
+              clearTimeout(timeout);
+              file.close(() => resolve(`/uploads/generated/${filename}`));
+            });
+          } else {
+            clearTimeout(timeout);
+            resolve(imageUrl);
+          }
+        }).on('error', (err) => {
+          clearTimeout(timeout);
+          console.warn('Flux yuklab olish xatoligi:', err.message);
+          resolve(imageUrl);
+        });
+      }
+      makeRequest(imageUrl);
+    } catch (err) {
+      clearTimeout(timeout);
+      resolve(imageUrl);
+    }
   });
+}
+
+async function generateMasterpieceImage(openai, enhancedPrompt, width = 1024, height = 1024) {
+  // 1. Agar OpenAI DALL-E 3 mavjud bo'lsa, avval undan foydalanamiz
+  if (openai && process.env.OPENAI_API_KEY) {
+    try {
+      const response = await openai.images.generate({
+        model: 'dall-e-3',
+        prompt: enhancedPrompt.slice(0, 1000),
+        n: 1,
+        size: '1024x1024',
+        quality: 'standard'
+      });
+      if (response.data?.[0]?.url) {
+        return {
+          imageUrl: response.data[0].url,
+          model: 'DALL-E 3'
+        };
+      }
+    } catch (dalleErr) {
+      console.warn('DALL-E 3 xatoligi (FLUX.1 ga o‘tilmoqda):', dalleErr.message);
+    }
+  }
+
+  // 2. FLUX.1 (Pollinations AI) orqali yuqori sifatda generatsiya qilish
+  const fluxUrl = await generateImageWithFlux(enhancedPrompt, width, height);
+  return {
+    imageUrl: fluxUrl,
+    model: 'FLUX.1 HD'
+  };
 }
 
 // ================= API ROUTES =================
@@ -560,11 +632,11 @@ app.post('/api/chats/:id/messages', async (req, res) => {
 
     // 1. Agar foydalanuvchi rasm chizishni so'ragan bo'lsa
     if (content && isImageRequest(content)) {
-      res.write(`data: ${JSON.stringify({ chunk: `🎨 **Siz so‘ragan tasvir yaratilmoqda...**\n\nAI tasvir g‘oyasini ishlab chiqmoqda va chizmoqda, bir necha soniya kuting...\n\n` })}\n\n`);
+      res.write(`data: ${JSON.stringify({ chunk: `🎨 **Siz so‘ragan tasvir yaratilmoqda...**\n\nAI g‘oyani ishlab chiqmoqda va mukammal tarzda chizmoqda, bir necha soniya kuting...\n\n` })}\n\n`);
 
       try {
-        const enhancedPrompt = await enrichImagePrompt(openai, content);
-        const imageUrl = await generateImageWithFlux(enhancedPrompt, 1024, 1024);
+        const enhancedPrompt = await enrichImagePrompt(openai, content, '', chat.messages || []);
+        const { imageUrl, model } = await generateMasterpieceImage(openai, enhancedPrompt, 1024, 1024);
 
         const cardData = JSON.stringify({
           imageUrl,
@@ -572,7 +644,7 @@ app.post('/api/chats/:id/messages', async (req, res) => {
           enhancedPrompt
         });
 
-        const imageChunk = `Mana, siz so‘ragan mukammal tasvir tayyor bo‘ldi!\n\n![${content}](${imageUrl})\n\n:::image-card\n${cardData}\n:::\n\n*Tasvir FLUX.1 AI modeli orqali 1024x1024 HD sifatda chizildi.*`;
+        const imageChunk = `Mana, siz so‘ragan ajoyib tasvir tayyor bo‘ldi!\n\n:::image-card\n${cardData}\n:::\n\n*Tasvir ${model} AI modeli orqali HD sifatda chizildi.*`;
         
         res.write(`data: ${JSON.stringify({ chunk: imageChunk })}\n\n`);
 
@@ -649,8 +721,17 @@ app.post('/api/generate-image', async (req, res) => {
     if (aspectRatio === '16:9') { width = 1024; height = 576; }
     else if (aspectRatio === '9:16') { width = 576; height = 1024; }
 
-    const enhancedPrompt = await enrichImagePrompt(openai, prompt, style);
-    const imageUrl = await generateImageWithFlux(enhancedPrompt, width, height);
+    let existingChatMessages = [];
+    if (chatId) {
+      const chats = await getChatsData();
+      const existingChat = chats.find(c => c.id === chatId);
+      if (existingChat && existingChat.messages) {
+        existingChatMessages = existingChat.messages;
+      }
+    }
+
+    const enhancedPrompt = await enrichImagePrompt(openai, prompt, style, existingChatMessages);
+    const { imageUrl, model } = await generateMasterpieceImage(openai, enhancedPrompt, width, height);
 
     if (chatId) {
       const chats = await getChatsData();
@@ -666,7 +747,7 @@ app.post('/api/generate-image', async (req, res) => {
         chat.messages.push({
           id: 'msg_' + Date.now() + '_ai',
           role: 'assistant',
-          content: `Mana, siz so‘ragan mukammal tasvir!\n\n![${prompt}](${imageUrl})\n\n:::image-card\n${cardData}\n:::\n\n*Tasvir FLUX.1 modeli orqali HD sifatda chizildi.*`,
+          content: `Mana, siz so‘ragan ajoyib tasvir!\n\n:::image-card\n${cardData}\n:::\n\n*Tasvir ${model} AI modeli orqali HD sifatda chizildi.*`,
           timestamp: new Date().toISOString()
         });
         chat.updatedAt = new Date().toISOString();
@@ -674,7 +755,7 @@ app.post('/api/generate-image', async (req, res) => {
       }
     }
 
-    res.json({ success: true, imageUrl, prompt, enhancedPrompt });
+    res.json({ success: true, imageUrl, prompt, enhancedPrompt, model });
   } catch (err) {
     console.error('Tasvir yaratishda xatolik:', err);
     res.status(500).json({ error: err.message });
