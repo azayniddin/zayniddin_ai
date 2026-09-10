@@ -7,11 +7,6 @@ import fs from 'fs/promises';
 import { existsSync, mkdirSync, createWriteStream } from 'fs';
 import https from 'https';
 import OpenAI from 'openai';
-import { createRequire } from 'module';
-
-const require = createRequire(import.meta.url);
-const { PDFParse } = require('pdf-parse');
-
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -171,9 +166,28 @@ Doimo qotmasdan, aniq, mantiqiy va maksimal darajada foydali javob ber!`;
 
 // ================= Fayllar, PDF va Rasmlarni Qayta Ishlash Yordamchilari =================
 
+let PDFParseClass = null;
+async function getPDFParser() {
+  if (PDFParseClass) return PDFParseClass;
+  try {
+    const { createRequire } = await import('module');
+    const req = createRequire(import.meta.url);
+    const pdfModule = req('pdf-parse');
+    PDFParseClass = pdfModule.PDFParse || pdfModule;
+    return PDFParseClass;
+  } catch (err) {
+    console.warn('PDF parser yuklanmadi (serverless yoki muhit cheklovi):', err.message);
+    return null;
+  }
+}
+
 async function extractTextFromPdf(buffer) {
   try {
-    const parser = new PDFParse({ data: buffer });
+    const Parser = await getPDFParser();
+    if (!Parser) {
+      return { text: '(PDF matni serverless muhitida ajratilmadi)', pages: 1 };
+    }
+    const parser = new Parser({ data: buffer });
     const textResult = await parser.getText();
     const info = await parser.getInfo().catch(() => ({}));
     await parser.destroy().catch(() => {});
@@ -765,7 +779,11 @@ app.post('/api/speak', async (req, res) => {
 
 // Har qanday boshqa yo'nalishlarni asosiy sahifaga yo'naltirish (SPA fallback)
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  const indexPath = path.join(__dirname, 'public', 'index.html');
+  if (existsSync(indexPath)) {
+    return res.sendFile(indexPath);
+  }
+  return res.redirect('/');
 });
 
 // Serverni ishga tushirish (Railway, Docker yoki mahalliy muhitda)
