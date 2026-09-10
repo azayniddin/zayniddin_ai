@@ -20,19 +20,27 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Ma'lumotlar va fayllar papkalari
-const DATA_DIR = path.join(__dirname, 'data');
+// Muhitni aniqlash (Vercel serverless yoki Railway/Docker)
+const isVercel = !!process.env.VERCEL;
+
+// Vercel serverlessda yagona yozish mumkin bo'lgan papka bu /tmp
+const DATA_DIR = isVercel ? path.join('/tmp', 'data') : path.join(__dirname, 'data');
 const CHATS_FILE = path.join(DATA_DIR, 'chats.json');
 const PROFILE_FILE = path.join(DATA_DIR, 'profile.json');
-const UPLOADS_DIR = path.join(__dirname, 'public', 'uploads');
+const UPLOADS_DIR = isVercel ? path.join('/tmp', 'uploads') : path.join(__dirname, 'public', 'uploads');
 const UPLOADS_FILES = path.join(UPLOADS_DIR, 'files');
 const UPLOADS_IMAGES = path.join(UPLOADS_DIR, 'images');
 const UPLOADS_DOCS = path.join(UPLOADS_DIR, 'docs');
 const UPLOADS_GENERATED = path.join(UPLOADS_DIR, 'generated');
 
+// Papkalarni xavfsiz yaratish (xatolik bo'lsa server qulab tushmaydi)
 [DATA_DIR, UPLOADS_DIR, UPLOADS_FILES, UPLOADS_IMAGES, UPLOADS_DOCS, UPLOADS_GENERATED].forEach(dir => {
-  if (!existsSync(dir)) {
-    mkdirSync(dir, { recursive: true });
+  try {
+    if (!existsSync(dir)) {
+      mkdirSync(dir, { recursive: true });
+    }
+  } catch (err) {
+    console.warn(`Papka yaratishda ogohlantirish (${dir}):`, err.message);
   }
 });
 
@@ -41,6 +49,9 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
+if (isVercel) {
+  app.use('/uploads', express.static(path.join('/tmp', 'uploads')));
+}
 
 // Fayllardan o'qish / yozish yordamchi funksiyalari
 async function getChatsData() {
@@ -58,7 +69,14 @@ async function getChatsData() {
 }
 
 async function saveChatsData(chats) {
-  await fs.writeFile(CHATS_FILE, JSON.stringify(chats, null, 2), 'utf8');
+  try {
+    if (!existsSync(DATA_DIR)) {
+      mkdirSync(DATA_DIR, { recursive: true });
+    }
+    await fs.writeFile(CHATS_FILE, JSON.stringify(chats, null, 2), 'utf8');
+  } catch (err) {
+    console.error('Chats saqlashda xatolik:', err.message);
+  }
 }
 
 async function getProfileData() {
@@ -72,6 +90,9 @@ async function getProfileData() {
   };
   try {
     if (!existsSync(PROFILE_FILE)) {
+      if (!existsSync(DATA_DIR)) {
+        mkdirSync(DATA_DIR, { recursive: true });
+      }
       await fs.writeFile(PROFILE_FILE, JSON.stringify(defaultProfile, null, 2), 'utf8');
       return defaultProfile;
     }
@@ -84,7 +105,14 @@ async function getProfileData() {
 }
 
 async function saveProfileData(profile) {
-  await fs.writeFile(PROFILE_FILE, JSON.stringify(profile, null, 2), 'utf8');
+  try {
+    if (!existsSync(DATA_DIR)) {
+      mkdirSync(DATA_DIR, { recursive: true });
+    }
+    await fs.writeFile(PROFILE_FILE, JSON.stringify(profile, null, 2), 'utf8');
+  } catch (err) {
+    console.error('Profile saqlashda xatolik:', err.message);
+  }
 }
 
 // OpenAI mijozini olish (Server ENV yoki Request Header orqali)
@@ -169,9 +197,15 @@ async function saveUploadedFile(fileData) {
   else if (isImage) targetSubdir = 'images';
 
   const ext = (name || '').split('.').pop() || (isPdf ? 'pdf' : (isImage ? 'jpg' : 'bin'));
-  const safeExt = ext.replace(/[^a-zA-Z0-9]/g, '');
-  const fileName = `up_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${safeExt}`;
-  const filePath = path.join(UPLOADS_DIR, targetSubdir, fileName);
+  const targetDir = path.join(UPLOADS_DIR, targetSubdir);
+  try {
+    if (!existsSync(targetDir)) {
+      mkdirSync(targetDir, { recursive: true });
+    }
+  } catch (e) {
+    console.warn('Upload papkasini yaratishda ogohlantirish:', e.message);
+  }
+  const filePath = path.join(targetDir, fileName);
 
   let buffer;
   if (dataUrl && dataUrl.includes(';base64,')) {
@@ -183,7 +217,11 @@ async function saveUploadedFile(fileData) {
     buffer = Buffer.from('');
   }
 
-  await fs.writeFile(filePath, buffer);
+  try {
+    await fs.writeFile(filePath, buffer);
+  } catch (err) {
+    console.warn('Faylni saqlashda xatolik:', err.message);
+  }
   const publicUrl = `/uploads/${targetSubdir}/${fileName}`;
 
   return {
@@ -730,12 +768,14 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Serverni ishga tushirish (0.0.0.0 orqali Railway va bulutli platformalarda to'g'ri bog'lanadi)
+// Serverni ishga tushirish (Railway, Docker yoki mahalliy muhitda)
 const HOST = '0.0.0.0';
-app.listen(PORT, HOST, () => {
-  console.log(`🚀 Shaxsiy AI Assistent serveri ishga tushdi: http://${HOST}:${PORT}`);
-  console.log(`📡 OpenAI Key: ${process.env.OPENAI_API_KEY ? 'Mavjud (Server ENV)' : 'Mavjud emas (Foydalanuvchi UI orqali kiritishi mumkin)'}`);
-});
+if (!process.env.VERCEL) {
+  app.listen(PORT, HOST, () => {
+    console.log(`🚀 Shaxsiy AI Assistent serveri ishga tushdi: http://${HOST}:${PORT}`);
+    console.log(`📡 OpenAI Key: ${process.env.OPENAI_API_KEY ? 'Mavjud (Server ENV)' : 'Mavjud emas (Foydalanuvchi UI orqali kiritishi mumkin)'}`);
+  });
+}
 
 export default app;
 
