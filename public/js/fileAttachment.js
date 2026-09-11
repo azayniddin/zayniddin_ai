@@ -85,7 +85,9 @@ class FileAttachmentManager {
       const id = 'att_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
       const isImage = file.type.startsWith('image/');
       const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
-      const isText = file.type.startsWith('text/') || /\.(txt|md|json|js|ts|py|html|css|csv|log|sql|xml|yaml|yml)$/i.test(file.name);
+      const isExcel = /\.(xlsx|xls|csv)$/i.test(file.name);
+      const isWord = /\.(docx|doc)$/i.test(file.name);
+      const isText = file.type.startsWith('text/') || /\.(txt|md|json|js|ts|py|html|css|log|sql|xml|yaml|yml)$/i.test(file.name);
 
       try {
         const dataUrl = await this.readFileAsDataURL(file);
@@ -98,10 +100,12 @@ class FileAttachmentManager {
           id,
           file,
           name: file.name,
-          type: file.type || (isPdf ? 'application/pdf' : 'application/octet-stream'),
+          type: file.type || (isPdf ? 'application/pdf' : (isExcel ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' : (isWord ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' : 'application/octet-stream'))),
           size: file.size,
           isImage,
           isPdf,
+          isExcel,
+          isWord,
           isText,
           dataUrl,
           rawText
@@ -180,6 +184,10 @@ class FileAttachmentManager {
         iconHtml = `<img src="${att.dataUrl}" class="attachment-chip-thumb" alt="Preview">`;
       } else if (att.isPdf) {
         iconHtml = `<div class="attachment-chip-badge pdf"><i data-lucide="file-text" style="width: 14px; height: 14px;"></i> <span>PDF</span></div>`;
+      } else if (att.isExcel) {
+        iconHtml = `<div class="attachment-chip-badge excel"><i data-lucide="table" style="width: 14px; height: 14px;"></i> <span>XLSX</span></div>`;
+      } else if (att.isWord) {
+        iconHtml = `<div class="attachment-chip-badge word"><i data-lucide="file-text" style="width: 14px; height: 14px;"></i> <span>DOCX</span></div>`;
       } else {
         const ext = att.name.split('.').pop()?.toUpperCase() || 'FILE';
         iconHtml = `<div class="attachment-chip-badge generic"><i data-lucide="file-code" style="width: 14px; height: 14px;"></i> <span>${ext}</span></div>`;

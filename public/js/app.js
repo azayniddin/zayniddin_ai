@@ -557,8 +557,10 @@ function appendMessageToUI(msg) {
     filesList.forEach(file => {
       const isImg = file.isImage || file.type?.startsWith('image/') || /\.(jpg|jpeg|png|webp|gif|svg)$/i.test(file.name || '');
       const isPdf = file.isPdf || file.type === 'application/pdf' || (file.name || '').toLowerCase().endsWith('.pdf');
+      const isExcel = file.isExcel || /\.(xlsx|xls|csv)$/i.test(file.name || '');
+      const isWord = file.isWord || /\.(docx|doc)$/i.test(file.name || '');
       const fileUrl = file.url || file.dataUrl || '#';
-      const fileName = file.name || (isPdf ? 'Hujjat.pdf' : (isImg ? 'Rasm' : 'Fayl'));
+      const fileName = file.name || (isPdf ? 'Hujjat.pdf' : (isExcel ? 'Jadval.xlsx' : (isWord ? 'Hujjat.docx' : (isImg ? 'Rasm' : 'Fayl'))));
 
       if (isImg) {
         itemsHtml += `
@@ -577,6 +579,42 @@ function appendMessageToUI(msg) {
               <div class="file-attachment-info">
                 <span class="file-attachment-name" title="${escapeHtml(fileName)}">${escapeHtml(fileName)}</span>
                 <span class="file-attachment-meta">PDF · ${sizeStr}</span>
+              </div>
+            </div>
+            <a href="${fileUrl}" download="${escapeHtml(fileName)}" class="file-download-btn" title="Yuklab olish">
+              <i data-lucide="download" style="width: 15px; height: 15px;"></i>
+            </a>
+          </div>
+        `;
+      } else if (isExcel) {
+        const sizeStr = file.size ? formatFileSize(file.size) : 'Excel Jadval';
+        itemsHtml += `
+          <div class="msg-file-attachment">
+            <div class="file-attachment-left">
+              <div class="file-icon-badge excel">
+                <i data-lucide="table" style="width: 18px; height: 18px;"></i>
+              </div>
+              <div class="file-attachment-info">
+                <span class="file-attachment-name" title="${escapeHtml(fileName)}">${escapeHtml(fileName)}</span>
+                <span class="file-attachment-meta">Excel · ${sizeStr}</span>
+              </div>
+            </div>
+            <a href="${fileUrl}" download="${escapeHtml(fileName)}" class="file-download-btn" title="Yuklab olish">
+              <i data-lucide="download" style="width: 15px; height: 15px;"></i>
+            </a>
+          </div>
+        `;
+      } else if (isWord) {
+        const sizeStr = file.size ? formatFileSize(file.size) : 'Word Hujjat';
+        itemsHtml += `
+          <div class="msg-file-attachment">
+            <div class="file-attachment-left">
+              <div class="file-icon-badge word">
+                <i data-lucide="file-text" style="width: 18px; height: 18px;"></i>
+              </div>
+              <div class="file-attachment-info">
+                <span class="file-attachment-name" title="${escapeHtml(fileName)}">${escapeHtml(fileName)}</span>
+                <span class="file-attachment-meta">Word · ${sizeStr}</span>
               </div>
             </div>
             <a href="${fileUrl}" download="${escapeHtml(fileName)}" class="file-download-btn" title="Yuklab olish">
@@ -646,12 +684,33 @@ function formatFileSize(bytes) {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
 }
 
-// AI xabarlarini Markdown, Tasvirlar va Eslatmalarni to'g'ri render qilish
+// AI xabarlarini Markdown, Hujjatlar (Excel/Word/PDF), Eslatmalar va Kartochkalarni to'g'ri render qilish
 function formatAssistantMessage(content) {
   if (!content) return '';
   let text = content;
 
-  // 1. Agar image-card tokenlari bo'lsa, marked.parse ularni kodga aylantirib yubormasligi uchun vaqtincha xavfsiz token bilan saqlaymiz
+  // 1. Eslatmalarni (reminders) marked parserdan oldin xavfsiz token bilan ajratib olish
+  const reminderCards = [];
+  text = text.replace(/```reminder\s*([\s\S]*?)\s*```/g, (match, jsonStr) => {
+    const placeholder = `__REMINDER_PH_${reminderCards.length}__`;
+    reminderCards.push(jsonStr.trim());
+    return `\n\n${placeholder}\n\n`;
+  });
+
+  // 2. Yangi Yaratilgan Hujjatlar (Excel, Word, PDF) kartochkalarini ajratib olish
+  const docCards = [];
+  text = text.replace(/:::document-file\s*([\s\S]*?)\s*:::/g, (match, jsonStr) => {
+    const placeholder = `__DOC_FILE_PH_${docCards.length}__`;
+    docCards.push(jsonStr.trim());
+    return `\n\n${placeholder}\n\n`;
+  });
+  text = text.replace(/```document\s*([\s\S]*?)\s*```/g, (match, jsonStr) => {
+    const placeholder = `__DOC_FILE_PH_${docCards.length}__`;
+    docCards.push(jsonStr.trim());
+    return `\n\n${placeholder}\n\n`;
+  });
+
+  // 3. Image-card tokenlari (agar mavjud bo'lsa)
   const imageCards = [];
   text = text.replace(/:::image-card\s*([\s\S]*?)\s*:::/g, (match, jsonStr) => {
     const placeholder = `__IMG_CARD_PH_${imageCards.length}__`;
@@ -659,15 +718,44 @@ function formatAssistantMessage(content) {
     return `\n\n${placeholder}\n\n`;
   });
 
-  // 2. Eslatmalarni (reminders) tayyorlash
-  if (window.deviceReminder) {
-    text = window.deviceReminder.parseReminders(text);
-  }
-
-  // 3. Markdown parse
+  // 4. Markdown parse qilish (faqat toza matn va haqiqiy dasturlash kodlari parse bo'ladi)
   let html = marked.parse(text);
 
-  // 4. image-card placeholderlarini toza HTML kartochkaga almashtirish
+  // 5. Eslatma (Reminder / Budilnik) kartochkalarini toza DOM qilib joylashtirish
+  reminderCards.forEach((jsonStr, idx) => {
+    let cardHtml = '';
+    try {
+      let cleanJson = jsonStr.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+      const data = JSON.parse(cleanJson);
+      if (window.deviceReminder) {
+        cardHtml = window.deviceReminder.renderReminderCardHtml(data);
+      }
+    } catch (e) {
+      console.warn('Reminder JSON parse xatosi:', e);
+    }
+    const ph = `__REMINDER_PH_${idx}__`;
+    html = html.replace(new RegExp(`<p>\\s*${ph}\\s*<\\/p>`, 'g'), cardHtml);
+    html = html.replace(new RegExp(ph, 'g'), cardHtml);
+  });
+
+  // 6. Hujjat (Excel / Word / PDF) kartochkalarini toza DOM qilib joylashtirish
+  docCards.forEach((jsonStr, idx) => {
+    let cardHtml = '';
+    try {
+      let cleanJson = jsonStr.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+      const data = JSON.parse(cleanJson);
+      if (window.documentEngine) {
+        cardHtml = window.documentEngine.renderDocumentCardHtml(data);
+      }
+    } catch (e) {
+      console.warn('Doc JSON parse xatosi:', e);
+    }
+    const ph = `__DOC_FILE_PH_${idx}__`;
+    html = html.replace(new RegExp(`<p>\\s*${ph}\\s*<\\/p>`, 'g'), cardHtml);
+    html = html.replace(new RegExp(ph, 'g'), cardHtml);
+  });
+
+  // 7. Image-card placeholderlarini almashtirish
   imageCards.forEach((jsonStr, idx) => {
     let cardHtml = '';
     try {
@@ -680,25 +768,41 @@ function formatAssistantMessage(content) {
       console.warn('Image-card JSON parse xatosi:', e);
     }
     const ph = `__IMG_CARD_PH_${idx}__`;
-    // Marked uni <p>__IMG_CARD_PH_0__</p> qilib qo'ygan bo'lishi mumkin
     html = html.replace(new RegExp(`<p>\\s*${ph}\\s*<\\/p>`, 'g'), cardHtml);
     html = html.replace(new RegExp(ph, 'g'), cardHtml);
   });
-
-  // 5. Agar matnda to'g'ridan-to'g'ri :::image-card qolgan bo'lsa (masalan qisman streamingda)
-  if (window.artGenerator) {
-    html = window.artGenerator.parseImageCards(html);
-  }
 
   return html;
 }
 
 // Kod bloklariga Nusxalash tugmalarini o'rnatish
 function setupCodeBlocks(container) {
-  // Agar tasodifan rasm HTML kartochkasi pre/code ichiga tushib qolgan bo'lsa, uni chiqarib haqiqiy rasmga aylantirish (Skrinshotdagi kabi holatlarni tuzatish)
+  // Agar tasodifan eslatma, hujjat yoki rasm kartochkasi pre/code ichiga tushib qolgan bo'lsa, uni chiqarib haqiqiy kartochkaga aylantirish
   const codeBlocks = container.querySelectorAll('pre');
   codeBlocks.forEach(pre => {
     const rawText = pre.innerText || pre.textContent || '';
+    
+    // 1. Eslatma kartochkasi tushib qolgan bo'lsa
+    if (rawText.includes('reminder-action-card') || rawText.includes('rem-btn-alarm') || rawText.includes('Telefon Eslatmasi')) {
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = rawText;
+      if (tempDiv.querySelector('.reminder-action-card')) {
+        pre.replaceWith(tempDiv.firstElementChild || tempDiv);
+        return;
+      }
+    }
+
+    // 2. Hujjat kartochkasi tushib qolgan bo'lsa
+    if (rawText.includes('document-file-card') || rawText.includes('doc-download-btn')) {
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = rawText;
+      if (tempDiv.querySelector('.document-file-card')) {
+        pre.replaceWith(tempDiv.firstElementChild || tempDiv);
+        return;
+      }
+    }
+
+    // 3. Rasm kartochkasi tushib qolgan bo'lsa
     if (rawText.includes('ai-image-showcase') || rawText.includes('ai-image-wrapper') || rawText.includes('/uploads/generated/')) {
       const tempDiv = document.createElement('div');
       tempDiv.innerHTML = rawText;
@@ -796,7 +900,9 @@ async function sendMessage(customContent = null, customImage = null, customFiles
       size: f.size,
       dataUrl: f.dataUrl,
       isImage: f.isImage,
-      isPdf: f.isPdf
+      isPdf: f.isPdf,
+      isExcel: f.isExcel,
+      isWord: f.isWord
     }))
   });
 
@@ -874,6 +980,13 @@ async function sendMessage(customContent = null, customImage = null, customFiles
             }
             if (data.chunk) {
               accumulatedText += data.chunk;
+              markdownBody.innerHTML = formatAssistantMessage(accumulatedText);
+              setupCodeBlocks(aiRow);
+              if (window.lucide) lucide.createIcons();
+              scrollToBottom();
+            }
+            if (data.replacedBlock) {
+              accumulatedText = accumulatedText.replace(/```document[\s\S]*?```/, data.replacedBlock);
               markdownBody.innerHTML = formatAssistantMessage(accumulatedText);
               setupCodeBlocks(aiRow);
               if (window.lucide) lucide.createIcons();

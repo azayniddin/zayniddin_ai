@@ -293,46 +293,45 @@ class DeviceReminderManager {
     const details = data.details || '';
     const googleUrl = this.getGoogleCalendarUrl(title, data.date, data.time, details);
 
-    const safeTitle = (title || '').replace(/'/g, "\\'");
-    const safeDetails = (details || '').replace(/'/g, "\\'");
+    const safeTitle = (title || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    const safeDetails = (details || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
     const safeDate = (data.date || '').replace(/'/g, "\\'");
     const safeTime = (data.time || '').replace(/'/g, "\\'");
 
-    return `
-      <div class="reminder-action-card">
-        <div class="reminder-card-top">
-          <div class="reminder-icon-box">
-            <i data-lucide="clock" style="width: 22px; height: 22px; color: #38bdf8;"></i>
-          </div>
-          <div class="reminder-title-box">
-            <div class="reminder-badge-chip">📱 Telefon Eslatmasi</div>
-            <div class="reminder-title-text">${title}</div>
-            <div class="reminder-time-text">
-              <span>📅 ${date}</span> • <span>⏰ ${time}</span>
-            </div>
-          </div>
-        </div>
-        ${details ? `<div class="reminder-details-text">${details}</div>` : ''}
-        <div class="reminder-actions-row">
-          <button class="rem-btn rem-btn-alarm" onclick="window.deviceReminder.setAndroidAlarm('${safeTitle}', '${safeTime}')" title="Android Soat / Budilnik ilovasida ochish">
-            <i data-lucide="alarm-clock" style="width: 15px; height: 15px;"></i>
-            <span>Budilnik (Soat)</span>
-          </button>
-          <a href="${googleUrl}" target="_blank" rel="noopener noreferrer" class="rem-btn rem-btn-google" title="Google Taqvim ilovasida ochish">
-            <i data-lucide="calendar" style="width: 15px; height: 15px;"></i>
-            <span>Google Taqvim</span>
-          </a>
-          <button class="rem-btn rem-btn-ics" onclick="window.deviceReminder.downloadIcsCalendar('${safeTitle}', '${safeDate}', '${safeTime}', '${safeDetails}')" title="Apple / Samsung taqvimiga yuklash (.ics)">
-            <i data-lucide="calendar-plus" style="width: 15px; height: 15px;"></i>
-            <span>Telefon Taqvimi</span>
-          </button>
-          <button class="rem-btn rem-btn-notify" onclick="window.deviceReminder.handlePushSchedule(this, '${safeTitle}', '${safeDate}', '${safeTime}', '${safeDetails}')" title="Telefonda bildirishnoma chiqarish">
-            <i data-lucide="bell" style="width: 15px; height: 15px;"></i>
-            <span>Telefonda eslatish</span>
-          </button>
-        </div>
-      </div>
-    `;
+    // Hech qanday boshlang'ich bo'shliqsiz (indentation), Markdown parser kod bloki deb hisoblamasligi uchun:
+    return `<div class="reminder-action-card glass-card">` +
+      `<div class="reminder-card-top">` +
+        `<div class="reminder-icon-box">` +
+          `<i data-lucide="clock" style="width: 22px; height: 22px; color: #38bdf8;"></i>` +
+        `</div>` +
+        `<div class="reminder-title-box">` +
+          `<div class="reminder-badge-chip">📱 Telefon Eslatmasi</div>` +
+          `<div class="reminder-title-text">${title}</div>` +
+          `<div class="reminder-time-text">` +
+            `<span>📅 ${date}</span> • <span>⏰ ${time}</span>` +
+          `</div>` +
+        `</div>` +
+      `</div>` +
+      (details ? `<div class="reminder-details-text">${details}</div>` : '') +
+      `<div class="reminder-actions-row">` +
+        `<button class="rem-btn rem-btn-alarm" onclick="window.deviceReminder.setAndroidAlarm('${safeTitle}', '${safeTime}')" title="Android Soat / Budilnik ilovasida ochish">` +
+          `<i data-lucide="alarm-clock" style="width: 15px; height: 15px;"></i>` +
+          `<span>Budilnik (Soat)</span>` +
+        `</button>` +
+        `<a href="${googleUrl}" target="_blank" rel="noopener noreferrer" class="rem-btn rem-btn-google" title="Google Taqvim ilovasida ochish">` +
+          `<i data-lucide="calendar" style="width: 15px; height: 15px;"></i>` +
+          `<span>Google Taqvim</span>` +
+        `</a>` +
+        `<button class="rem-btn rem-btn-ics" onclick="window.deviceReminder.downloadIcsCalendar('${safeTitle}', '${safeDate}', '${safeTime}', '${safeDetails}')" title="Apple / Samsung taqvimiga yuklash (.ics)">` +
+          `<i data-lucide="calendar-plus" style="width: 15px; height: 15px;"></i>` +
+          `<span>Telefon Taqvimi</span>` +
+        `</button>` +
+        `<button class="rem-btn rem-btn-notify" onclick="window.deviceReminder.handlePushSchedule(this, '${safeTitle}', '${safeDate}', '${safeTime}', '${safeDetails}')" title="Telefonda bildirishnoma chiqarish">` +
+          `<i data-lucide="bell" style="width: 15px; height: 15px;"></i>` +
+          `<span>Telefonda eslatish</span>` +
+        `</button>` +
+      `</div>` +
+    `</div>`;
   }
 }
 

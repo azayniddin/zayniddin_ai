@@ -7,7 +7,11 @@ import fs from 'fs/promises';
 import { existsSync, mkdirSync, createWriteStream } from 'fs';
 import https from 'https';
 import OpenAI from 'openai';
-import { startTelegramBot, notifyAdminNewUser, notifyAdminImageGenerated } from './telegramBot.js';
+import * as XLSX from 'xlsx';
+import mammoth from 'mammoth';
+import { Document as DocxDocument, Packer, Paragraph, HeadingLevel, AlignmentType } from 'docx';
+import PDFDocument from 'pdfkit';
+import { startTelegramBot, notifyAdminNewUser } from './telegramBot.js';
 
 dotenv.config();
 
@@ -226,20 +230,36 @@ ASOSIY QOIDALAR VA FAZILATLARING:
 4. Telefon Ilovalari (Eslatma, Budilnik, Taqvim Integratsiyasi):
    - Hozirgi aniq vaqt: ${uzbekDate}, soat ${uzbekTime} (O'zbekiston, Toshkent vaqti). Bugungi sana: ${isoDate}.
    - Agar foydalanuvchi vaqt bilan bog'liq eslatma qo'yishni, budilnik o'rnatishni yoki taqvimga reja kiritishni so'rasa (masalan: "soat 15:00 ga eslatma qo'y", "ertaga 10:00 da uchrashuv bor", "budilnik qo'y", "darsni eslatib qo'y"):
-     Javobingizda chiroyli tasdiqlang va xabar oxirida quyidagi maxsus JSON blokini qo'shing:
+     Javobingizda chiroyli tasdiqlang va xabar oxirida quyidagi maxsus JSON blokini qo'shing (hech qanday HTML kod yozmang, faqat shu maxsus blok):
 \`\`\`reminder
 {
   "title": "Eslatma mavzusi (qisqa va aniq)",
   "date": "YYYY-MM-DD",
-  "time": "HH:mm",
+  "time": "HH:MM",
   "type": "alarm" | "calendar" | "reminder",
   "details": "Qisqacha izoh"
 }
 \`\`\`
    - Ushbu blok orqali dastur avtomatik ravishda foydalanuvchining telefoniga (Android Soat / Budilnik ilovasi, Google / Apple Taqvim yoki Push bildirishnoma) 1 ta tugma bilan ulanish interfeysini chiqaradi!
-5. Rasm va Tasvir Chizish Qoidasi:
-   - Agar foydalanuvchi biror rasm chizishni, surat yaratishni so'rasa, HECH QACHON HTML, SVG yoki CSS kodlari orqali rasm yasashga urinma!
-   - Tizimning o'zi maxsus HD Image Generator (FLUX.1 / DALL-E) orqali haqiqiy tasvirni chizib beradi.
+5. Professional Office va Hujjatlar Dvigateli (PDF, Word, Excel):
+   - Foydalanuvchi yuklagan PDF, Word (.docx), Excel (.xlsx/.xls/.csv) fayllarni chuqur tahlil qilasan va savollariga to'liq, mukammal javob berasan.
+   - AGAR foydalanuvchi Excel jadvali, ma'lumotlar ro'yxati, hisobot, shartnoma yoki reja yaratib berishni so'rasa (masalan: "xodimlar ro'yxati excel qilib ber", "shartnoma word qilib ber", "reja pdf qilib ber"):
+     Javobingizda chiroyli tushuntiring va xabar oxirida quyidagi maxsus JSON blokini qo'shing:
+\`\`\`document
+{
+  "type": "excel" | "word" | "pdf",
+  "title": "Hujjat sarlavhasi (masalan: Xodimlar Ro'yxati)",
+  "filename": "xodimlar_royxati.xlsx",
+  "data": [
+    ["Ism", "Lavozim", "Maosh (so'm)", "Telefon"],
+    ["Aliyev Vali", "Senior Dasturchi", "25,000,000", "+998 90 123-45-67"],
+    ["Karimov Sardor", "Frontend Dasturchi", "18,000,000", "+998 93 987-65-43"]
+  ]
+}
+\`\`\`
+     (Eslatma: Excel uchun "data" 2D array jadval bo'ladi. Word va PDF uchun esa "data" to'liq matn yoki paragraflar arrayi bo'ladi).
+     Ushbu blok orqali tizim avtomatik ravishda haqiqiy yuklab olinadigan .xlsx, .docx yoki .pdf fayl yaratib beradi!
+   - Tizimda rasm chizish (Image generation) o'chirilgan. Agar rasm so'ralsa, tasvir chizish o'chirilganini va hujjatlar, kod va matn bilan yordam bera olishingizni ayting.
 6. Foydalanuvchi Profili:
    - Ismi: ${profile.userName}
    - Kasbi/Tajribasi: ${profile.codingExperience}
@@ -285,16 +305,26 @@ async function extractTextFromPdf(buffer) {
   }
 }
 
+function formatBytes(bytes) {
+  if (!bytes || bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
+
 async function saveUploadedFile(fileData) {
   const { name, dataUrl, type } = fileData;
   const isPdf = type === 'application/pdf' || (name || '').toLowerCase().endsWith('.pdf');
+  const isDocx = (name || '').toLowerCase().endsWith('.docx');
+  const isExcel = /\.(xlsx|xls|csv)$/i.test(name || '');
   const isImage = type?.startsWith('image/') || /\.(jpg|jpeg|png|webp|gif|svg)$/i.test(name || '');
 
   let targetSubdir = 'files';
-  if (isPdf) targetSubdir = 'docs';
+  if (isPdf || isDocx || isExcel) targetSubdir = 'docs';
   else if (isImage) targetSubdir = 'images';
 
-  const ext = (name || '').split('.').pop() || (isPdf ? 'pdf' : (isImage ? 'jpg' : 'bin'));
+  const ext = (name || '').split('.').pop() || (isPdf ? 'pdf' : (isDocx ? 'docx' : (isExcel ? 'xlsx' : (isImage ? 'jpg' : 'bin'))));
   const targetDir = path.join(UPLOADS_DIR, targetSubdir);
   try {
     if (!existsSync(targetDir)) {
@@ -303,6 +333,8 @@ async function saveUploadedFile(fileData) {
   } catch (e) {
     console.warn('Upload papkasini yaratishda ogohlantirish:', e.message);
   }
+
+  const fileName = `upload_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${ext}`;
   const filePath = path.join(targetDir, fileName);
 
   let buffer;
@@ -328,166 +360,205 @@ async function saveUploadedFile(fileData) {
     type: type || 'application/octet-stream',
     size: buffer.length,
     isPdf,
+    isDocx,
+    isExcel,
     isImage,
     buffer
   };
 }
 
-// ================= AI Tasvir Yaratish (Image Generation) Yordamchilari =================
-
-function isImageRequest(text) {
-  if (!text) return false;
-  const t = text.toLowerCase().trim();
-  if (t.includes('qanday chiziladi') || t.includes('chizishni o\'rganish') || t.includes('chizish kursi')) return false;
-
-  const patterns = [
-    /rasm(i|ini|ni)?\s*(chiz|yarat|qilib|chiqar|ko'rsat|korsat|tayyorla)/i,
-    /chiz(ib)?\s*(ber|beting|bering|beraolasanmi|olasanmi|berasanmi)/i,
-    /rasmini\s*(chiz|yarat|ber|ko'rsat|korsat|chiqar)/i,
-    /surat(i|ini|ni)?\s*(chiz|yarat|ber|ko'rsat|korsat|tayyorla)/i,
-    /tasvir(i|ini|ni)?\s*(chiz|yarat|ber|ko'rsat|korsat)/i,
-    /tasvirlab\s*ber/i,
-    /generate\s*(an?\s*)?image/i,
-    /draw\s*(an?\s*)?(picture|image|photo)/i,
-    /paint\s*(an?\s*)?(picture|image)/i,
-    /illyustratsiya\s*(chiz|yarat)/i,
-    /bitta\s*rasm/i,
-    /rasm\s*kerak/i,
-    /surat\s*kerak/i,
-    /rasm(ga|ni)?\s*.*(qo'sh|qosh|o'zgartir|ozgartir|almashtir|boshqacha|yana)/i,
-    /(qo'sh|qosh|o'zgartir|ozgartir)\s*.*rasm/i,
-    /unga\s*.*(qo'sh|chiz|yarat)/i,
-    /yana\s*(bitta|birorta)?\s*rasm/i
-  ];
-  return patterns.some(p => p.test(t));
-}
-
-async function enrichImagePrompt(openai, userPrompt, style = '', contextMessages = []) {
+// Word (.docx) fayllaridan matnni o'qish (mammoth)
+async function extractTextFromDocx(buffer) {
   try {
-    const styleInstruction = style ? `Artistic style preference: ${style}.` : '';
-
-    // Oldingi suhbat va rasm kontekstini yig'ish (ayniqsa rasmga o'zgartirish yoki yangi element kiritilayotganda)
-    let contextStr = '';
-    if (contextMessages && contextMessages.length > 0) {
-      const recent = contextMessages.slice(-6).map(m => {
-        let text = '';
-        if (typeof m.content === 'string') text = m.content;
-        else if (Array.isArray(m.content)) text = m.content.find(c => c.type === 'text')?.text || '';
-        return `${m.role}: ${text.slice(0, 300)}`;
-      }).join('\n');
-      contextStr = `PREVIOUS CONVERSATION & ART CONTEXT:\n${recent}\n\n`;
-    }
-
-    const res = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [
-        {
-          role: 'system',
-          content: `You are a world-class AI art director and lead visual prompt engineer for top-tier image generators (FLUX.1 and DALL-E 3).
-Convert the user request (often in Uzbek) into an extraordinary, highly detailed, masterwork English visual prompt.
-
-CRITICAL INSTRUCTIONS FOR IMAGE ITERATIONS / EDITS / ADDITIONS:
-1. If the user asks to modify, add an element to, or iterate on a previous image (e.g. "rasmga biron narsa qo'shib ber", "mashinani qizil qil", "quyosh qo'sh", "orqasiga shahar chiz", "unga yana bitta mushuk qo'sh"):
-   - You MUST examine the PREVIOUS CONVERSATION CONTEXT.
-   - PRESERVE the existing main subject, setting, and overall aesthetic from the previous discussion!
-   - Seamlessly integrate the newly requested element, change, or detail into the existing scene without replacing or wiping out the original subject!
-2. Craft visually stunning descriptions: dramatic cinematic lighting, volumetric atmosphere, octane render, 8k resolution, raytracing reflections, masterwork composition.
-3. Output ONLY the refined English prompt text. Do not add quotes, explanations, or markdown.`
-        },
-        {
-          role: 'user',
-          content: `${contextStr}User Request: "${userPrompt}". ${styleInstruction}`
-        }
-      ],
-      max_tokens: 380,
-      temperature: 0.7
-    });
-    return res.choices[0]?.message?.content?.trim() || userPrompt;
+    const result = await mammoth.extractRawText({ buffer });
+    return { text: result.value ? result.value.trim() : '' };
   } catch (err) {
-    console.warn('Prompt enrichment error:', err);
-    return userPrompt;
+    console.error('Word (.docx) o‘qishda xatolik:', err);
+    return { text: '' };
   }
 }
 
-async function generateImageWithFlux(enhancedPrompt, width = 1024, height = 1024) {
-  const seed = Math.floor(Math.random() * 10000000);
-  const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(enhancedPrompt)}?width=${width}&height=${height}&seed=${seed}&nologo=true&model=flux`;
-
-  const filename = `ai_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.jpg`;
-  const uploadDir = UPLOADS_GENERATED;
+// Excel (.xlsx, .xls, .csv) fayllaridan jadvallarni o'qish (SheetJS)
+function extractTextFromExcel(buffer) {
   try {
-    if (!existsSync(uploadDir)) {
-      mkdirSync(uploadDir, { recursive: true });
-    }
-  } catch (e) {}
-
-  const filePath = path.join(uploadDir, filename);
-
-  return new Promise((resolve) => {
-    // Agar faylga yuklab olishda muammo bo'lsa, to'g'ridan-to'g'ri Pollinations URL beriladi
-    const timeout = setTimeout(() => {
-      console.warn('Flux yuklab olish taymauti, to‘g‘ridan-to‘g‘ri havola ishlatilmoqda');
-      resolve(imageUrl);
-    }, 15000);
-
-    try {
-      const file = createWriteStream(filePath);
-      function makeRequest(targetUrl) {
-        https.get(targetUrl, (response) => {
-          if (response.statusCode >= 300 && response.statusCode < 400 && response.headers.location) {
-            makeRequest(response.headers.location);
-          } else if (response.statusCode === 200) {
-            response.pipe(file);
-            file.on('finish', () => {
-              clearTimeout(timeout);
-              file.close(() => resolve(`/uploads/generated/${filename}`));
-            });
-          } else {
-            clearTimeout(timeout);
-            resolve(imageUrl);
-          }
-        }).on('error', (err) => {
-          clearTimeout(timeout);
-          console.warn('Flux yuklab olish xatoligi:', err.message);
-          resolve(imageUrl);
-        });
+    const workbook = XLSX.read(buffer, { type: 'buffer' });
+    let text = '';
+    workbook.SheetNames.forEach(sheetName => {
+      const sheet = workbook.Sheets[sheetName];
+      const csv = XLSX.utils.sheet_to_csv(sheet);
+      if (csv && csv.trim()) {
+        text += `\n--- Sahifa (Sheet): "${sheetName}" ---\n${csv.trim()}\n`;
       }
-      makeRequest(imageUrl);
-    } catch (err) {
-      clearTimeout(timeout);
-      resolve(imageUrl);
+    });
+    return { text: text.trim() };
+  } catch (err) {
+    console.error('Excel (.xlsx) o‘qishda xatolik:', err);
+    return { text: '' };
+  }
+}
+
+// ================= Office Hujjatlarini Yaratish (Document Generators) =================
+
+// Helper to normalize document generator parameters
+function normalizeDocArgs(arg1, arg2, arg3) {
+  let filename = '';
+  let title = '';
+  let data = null;
+
+  const isExt = str => typeof str === 'string' && /\.(xlsx|xls|docx|doc|pdf)$/i.test(str);
+
+  if (isExt(arg1)) {
+    filename = arg1;
+    title = typeof arg2 === 'string' ? arg2 : '';
+    data = arg3 !== undefined ? arg3 : arg2;
+  } else if (isExt(arg3)) {
+    filename = arg3;
+    title = typeof arg1 === 'string' ? arg1 : '';
+    data = arg2;
+  } else {
+    title = typeof arg1 === 'string' ? arg1 : '';
+    data = arg2;
+    filename = typeof arg3 === 'string' ? arg3 : '';
+  }
+
+  return { filename, title, data };
+}
+
+// 1. Excel (.xlsx) fayl yaratish
+async function generateExcelFile(arg1, arg2, arg3) {
+  try {
+    const { filename, title, data: rows } = normalizeDocArgs(arg1, arg2, arg3);
+    const wb = XLSX.utils.book_new();
+    let ws;
+    if (Array.isArray(rows) && rows.length > 0) {
+      if (Array.isArray(rows[0])) {
+        ws = XLSX.utils.aoa_to_sheet(rows);
+      } else {
+        ws = XLSX.utils.json_to_sheet(rows);
+      }
+    } else {
+      ws = XLSX.utils.aoa_to_sheet([['Sarlavha', 'Izoh'], [title || 'Ma\'lumot', 'Tayyorlandi']]);
+    }
+
+    XLSX.utils.book_append_sheet(wb, ws, 'Hisobot');
+    const outBuffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+
+    const safeBase = (filename || title || 'hisobot').replace(/[^a-zA-Z0-9_\-\.]/g, '_');
+    const finalName = safeBase.toLowerCase().endsWith('.xlsx') ? safeBase : `${safeBase}_${Date.now()}.xlsx`;
+    const filePath = path.join(UPLOADS_DOCS, finalName);
+    await fs.writeFile(filePath, outBuffer);
+
+    return {
+      type: 'excel',
+      title: title || 'Excel Jadval',
+      filename: finalName,
+      fileUrl: `/uploads/docs/${finalName}`,
+      sizeText: formatBytes(outBuffer.length)
+    };
+  } catch (e) {
+    console.error('Excel yaratishda xatolik:', e);
+    throw e;
+  }
+}
+
+// 2. Word (.docx) fayl yaratish
+async function generateWordFile(arg1, arg2, arg3) {
+  try {
+    const { filename, title, data: contentOrSections } = normalizeDocArgs(arg1, arg2, arg3);
+    const paragraphs = [
+      new Paragraph({
+        text: title || 'Hujjat',
+        heading: HeadingLevel.TITLE,
+        alignment: AlignmentType.CENTER
+      }),
+      new Paragraph({ text: '' })
+    ];
+
+    if (Array.isArray(contentOrSections)) {
+      contentOrSections.forEach(sec => {
+        if (typeof sec === 'string') {
+          paragraphs.push(new Paragraph({ text: sec }));
+          paragraphs.push(new Paragraph({ text: '' }));
+        } else if (sec && typeof sec === 'object') {
+          if (sec.heading) paragraphs.push(new Paragraph({ text: sec.heading, heading: HeadingLevel.HEADING_2 }));
+          if (sec.text) paragraphs.push(new Paragraph({ text: sec.text }));
+          paragraphs.push(new Paragraph({ text: '' }));
+        }
+      });
+    } else if (typeof contentOrSections === 'string') {
+      contentOrSections.split('\n\n').forEach(pText => {
+        if (pText.trim()) {
+          paragraphs.push(new Paragraph({ text: pText.trim() }));
+          paragraphs.push(new Paragraph({ text: '' }));
+        }
+      });
+    }
+
+    const doc = new DocxDocument({
+      sections: [{
+        properties: {},
+        children: paragraphs
+      }]
+    });
+
+    const outBuffer = await Packer.toBuffer(doc);
+    const safeBase = (filename || title || 'hujjat').replace(/[^a-zA-Z0-9_\-\.]/g, '_');
+    const finalName = safeBase.toLowerCase().endsWith('.docx') ? safeBase : `${safeBase}_${Date.now()}.docx`;
+    const filePath = path.join(UPLOADS_DOCS, finalName);
+    await fs.writeFile(filePath, outBuffer);
+
+    return {
+      type: 'word',
+      title: title || 'Word Hujjati',
+      filename: finalName,
+      fileUrl: `/uploads/docs/${finalName}`,
+      sizeText: formatBytes(outBuffer.length)
+    };
+  } catch (e) {
+    console.error('Word yaratishda xatolik:', e);
+    throw e;
+  }
+}
+
+// 3. PDF (.pdf) fayl yaratish
+async function generatePdfFile(arg1, arg2, arg3) {
+  return new Promise((resolve, reject) => {
+    try {
+      const { filename, title, data: content } = normalizeDocArgs(arg1, arg2, arg3);
+      const doc = new PDFDocument({ margin: 50 });
+      const safeBase = (filename || title || 'hujjat').replace(/[^a-zA-Z0-9_\-\.]/g, '_');
+      const finalName = safeBase.toLowerCase().endsWith('.pdf') ? safeBase : `${safeBase}_${Date.now()}.pdf`;
+      const filePath = path.join(UPLOADS_DOCS, finalName);
+      const writeStream = createWriteStream(filePath);
+
+      doc.pipe(writeStream);
+
+      doc.fontSize(22).fillColor('#1e293b').text(title || 'Hujjat', { align: 'center' });
+      doc.moveDown(0.5);
+      doc.fontSize(10).fillColor('#64748b').text(`Yaratilgan sana: ${new Date().toLocaleDateString('uz-UZ')}`, { align: 'center' });
+      doc.moveDown(1.5);
+
+      const textStr = typeof content === 'string' ? content : JSON.stringify(content, null, 2);
+      doc.fontSize(12).fillColor('#334155').text(textStr, { lineGap: 6 });
+
+      doc.end();
+
+      writeStream.on('finish', async () => {
+        const stats = await fs.stat(filePath).catch(() => ({ size: 0 }));
+        resolve({
+          type: 'pdf',
+          title: title || 'PDF Hujjati',
+          filename: finalName,
+          fileUrl: `/uploads/docs/${finalName}`,
+          sizeText: formatBytes(stats.size)
+        });
+      });
+
+      writeStream.on('error', reject);
+    } catch (e) {
+      reject(e);
     }
   });
-}
-
-async function generateMasterpieceImage(openai, enhancedPrompt, width = 1024, height = 1024) {
-  // 1. Agar OpenAI DALL-E 3 mavjud bo'lsa, avval undan foydalanamiz
-  if (openai && process.env.OPENAI_API_KEY) {
-    try {
-      const response = await openai.images.generate({
-        model: 'dall-e-3',
-        prompt: enhancedPrompt.slice(0, 1000),
-        n: 1,
-        size: '1024x1024',
-        quality: 'standard'
-      });
-      if (response.data?.[0]?.url) {
-        return {
-          imageUrl: response.data[0].url,
-          model: 'DALL-E 3'
-        };
-      }
-    } catch (dalleErr) {
-      console.warn('DALL-E 3 xatoligi (FLUX.1 ga o‘tilmoqda):', dalleErr.message);
-    }
-  }
-
-  // 2. FLUX.1 (Pollinations AI) orqali yuqori sifatda generatsiya qilish
-  const fluxUrl = await generateImageWithFlux(enhancedPrompt, width, height);
-  return {
-    imageUrl: fluxUrl,
-    model: 'FLUX.1 HD'
-  };
 }
 
 // ================= API ROUTES =================
@@ -797,61 +868,6 @@ app.post('/api/chats/:id/messages', async (req, res) => {
       ...recentMessages
     ];
 
-    // 1. Agar foydalanuvchi rasm chizishni so'ragan bo'lsa
-    if (content && isImageRequest(content)) {
-      const userLimit = user ? (user.imageLimit ?? 5) : 5;
-      if (user && (user.imageCount || 0) >= userLimit) {
-        const limitChunk = `⚠️ **Rasm chizish limitingiz (${userLimit} ta) tugadi!**\n\nQo‘shimcha rasm limiti olish uchun iltimos ma'muriyat (Admin) bilan bog‘laning.`;
-        res.write(`data: ${JSON.stringify({ chunk: limitChunk })}\n\n`);
-        res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
-        return res.end();
-      }
-
-      res.write(`data: ${JSON.stringify({ chunk: `🎨 **Siz so‘ragan tasvir yaratilmoqda...**\n\nAI g‘oyani ishlab chiqmoqda va mukammal tarzda chizmoqda, bir necha soniya kuting...\n\n` })}\n\n`);
-
-      try {
-        const enhancedPrompt = await enrichImagePrompt(openai, content, '', chat.messages || []);
-        const { imageUrl, model } = await generateMasterpieceImage(openai, enhancedPrompt, 1024, 1024);
-
-        const cardData = JSON.stringify({
-          imageUrl,
-          prompt: content,
-          enhancedPrompt
-        });
-
-        const imageChunk = `Mana, siz so‘ragan ajoyib tasvir tayyor bo‘ldi!\n\n:::image-card\n${cardData}\n:::\n\n*Tasvir ${model} AI modeli orqali HD sifatda chizildi.*`;
-        
-        res.write(`data: ${JSON.stringify({ chunk: imageChunk })}\n\n`);
-
-        if (user) {
-          user.imageCount = (user.imageCount || 0) + 1;
-          const allUsers = await getUsersData();
-          const uIdx = allUsers.findIndex(u => u.id === user.id);
-          if (uIdx !== -1) {
-            allUsers[uIdx].imageCount = user.imageCount;
-            await saveUsersData(allUsers);
-          }
-          notifyAdminImageGenerated(user, content, imageUrl, model).catch(() => {});
-        }
-
-        const assistantMsgObj = {
-          id: 'msg_' + Date.now() + '_ai',
-          role: 'assistant',
-          content: imageChunk,
-          timestamp: new Date().toISOString()
-        };
-        chat.messages.push(assistantMsgObj);
-        chat.updatedAt = new Date().toISOString();
-        await saveChatsData(chats);
-
-        res.write(`data: ${JSON.stringify({ done: true, messageId: assistantMsgObj.id })}\n\n`);
-        return res.end();
-      } catch (imgErr) {
-        console.error('Tasvir chizishda xatolik:', imgErr);
-        res.write(`data: ${JSON.stringify({ chunk: `\n\n*(Tasvir yaratishda vaqtinchalik uzilish: ${imgErr.message}. Odatiy javobga o'tilmoqda...)*\n\n` })}\n\n`);
-      }
-    }
-
     const stream = await openai.chat.completions.create({
       model: 'gpt-4o',
       messages: messagesToSend,
@@ -867,6 +883,34 @@ app.post('/api/chats/:id/messages', async (req, res) => {
       if (delta) {
         fullAssistantResponse += delta;
         res.write(`data: ${JSON.stringify({ chunk: delta })}\n\n`);
+      }
+    }
+
+    // 2. Avtomatik Hujjat (Excel / Word / PDF) yaratish va kartochkaga almashtirish
+    const docBlockRegex = /```document\s*([\s\S]*?)\s*```/g;
+    let docMatch;
+    while ((docMatch = docBlockRegex.exec(fullAssistantResponse)) !== null) {
+      try {
+        const docPayload = JSON.parse(docMatch[1].trim());
+        let generated = null;
+        const lowerType = (docPayload.type || '').toLowerCase();
+        const lowerName = (docPayload.filename || '').toLowerCase();
+
+        if (lowerType === 'excel' || lowerName.endsWith('.xlsx') || lowerName.endsWith('.xls')) {
+          generated = await generateExcelFile(docPayload.filename, docPayload.title, docPayload.data);
+        } else if (lowerType === 'word' || lowerName.endsWith('.docx')) {
+          generated = await generateWordFile(docPayload.filename, docPayload.title, docPayload.data);
+        } else if (lowerType === 'pdf' || lowerName.endsWith('.pdf')) {
+          generated = await generatePdfFile(docPayload.filename, docPayload.title, docPayload.data);
+        }
+
+        if (generated) {
+          const docCardBlock = `\n\n:::document-file\n${JSON.stringify(generated)}\n:::\n\n`;
+          fullAssistantResponse = fullAssistantResponse.replace(docMatch[0], docCardBlock);
+          res.write(`data: ${JSON.stringify({ documentCreated: generated, replacedBlock: docCardBlock })}\n\n`);
+        }
+      } catch (docErr) {
+        console.warn('Avtomatik hujjat yaratishda ogohlantirish:', docErr.message);
       }
     }
 
@@ -890,84 +934,32 @@ app.post('/api/chats/:id/messages', async (req, res) => {
   }
 });
 
-// To'g'ridan-to'g'ri Rasm Chizish API (Modal va Quick Tool uchun)
-app.post('/api/generate-image', async (req, res) => {
-  const openai = getOpenAIClient(req);
-  if (!openai) {
-    return res.status(401).json({ error: 'OpenAI API kaliti topilmadi' });
-  }
-
-  const user = await getOrCreateUser(req);
-  if (user && user.isBlocked) {
-    return res.status(403).json({ error: "Sizning profilingiz ma'muriyat tomonidan bloklangan." });
-  }
-
-  const userLimit = user ? (user.imageLimit ?? 5) : 5;
-  if (user && (user.imageCount || 0) >= userLimit) {
-    return res.status(403).json({
-      error: `Rasm chizish limitingiz (${userLimit} ta) tugadi! Qo‘shimcha limit olish uchun ma'muriyat bilan bog‘laning.`
-    });
-  }
-
-  const { prompt, style, aspectRatio = '1:1', chatId } = req.body;
-  if (!prompt) {
-    return res.status(400).json({ error: 'Rasm tavsifi (prompt) kiritilmagan' });
+// To'g'ridan-to'g'ri Hujjat (Excel / Word / PDF) Yaratish API
+app.post('/api/create-document', async (req, res) => {
+  const { type, title, filename, data } = req.body;
+  if (!type && !filename) {
+    return res.status(400).json({ error: 'Hujjat turi yoki fayl nomi kiritilmagan' });
   }
 
   try {
-    let width = 1024, height = 1024;
-    if (aspectRatio === '16:9') { width = 1024; height = 576; }
-    else if (aspectRatio === '9:16') { width = 576; height = 1024; }
+    let result = null;
+    const lowerType = (type || '').toLowerCase();
+    const lowerName = (filename || '').toLowerCase();
 
-    let existingChatMessages = [];
-    if (chatId) {
-      const chats = await getChatsData();
-      const existingChat = chats.find(c => c.id === chatId);
-      if (existingChat && existingChat.messages) {
-        existingChatMessages = existingChat.messages;
-      }
+    if (lowerType === 'excel' || lowerName.endsWith('.xlsx') || lowerName.endsWith('.xls')) {
+      result = await generateExcelFile(filename || 'jadval.xlsx', title || 'Excel Jadvali', data || []);
+    } else if (lowerType === 'word' || lowerName.endsWith('.docx')) {
+      result = await generateWordFile(filename || 'hujjat.docx', title || 'Word Hujjati', data || '');
+    } else if (lowerType === 'pdf' || lowerName.endsWith('.pdf')) {
+      result = await generatePdfFile(filename || 'hujjat.pdf', title || 'PDF Hujjati', data || '');
+    } else {
+      return res.status(400).json({ error: "Noma'lum hujjat formati. Faqat excel, word, pdf qo'llab-quvvatlanadi" });
     }
 
-    const enhancedPrompt = await enrichImagePrompt(openai, prompt, style, existingChatMessages);
-    const { imageUrl, model } = await generateMasterpieceImage(openai, enhancedPrompt, width, height);
-
-    if (user) {
-      user.imageCount = (user.imageCount || 0) + 1;
-      const allUsers = await getUsersData();
-      const uIdx = allUsers.findIndex(u => u.id === user.id);
-      if (uIdx !== -1) {
-        allUsers[uIdx].imageCount = user.imageCount;
-        await saveUsersData(allUsers);
-      }
-      notifyAdminImageGenerated(user, prompt, imageUrl, model).catch(() => {});
-    }
-
-    if (chatId) {
-      const chats = await getChatsData();
-      const chat = chats.find(c => c.id === chatId);
-      if (chat) {
-        chat.messages.push({
-          id: 'msg_' + Date.now(),
-          role: 'user',
-          content: `🎨 Rasm: ${prompt} (${style || 'Standard'})`,
-          timestamp: new Date().toISOString()
-        });
-        const cardData = JSON.stringify({ imageUrl, prompt, enhancedPrompt });
-        chat.messages.push({
-          id: 'msg_' + Date.now() + '_ai',
-          role: 'assistant',
-          content: `Mana, siz so‘ragan ajoyib tasvir!\n\n:::image-card\n${cardData}\n:::\n\n*Tasvir ${model} AI modeli orqali HD sifatda chizildi.*`,
-          timestamp: new Date().toISOString()
-        });
-        chat.updatedAt = new Date().toISOString();
-        await saveChatsData(chats);
-      }
-    }
-
-    res.json({ success: true, imageUrl, prompt, enhancedPrompt, model, remainingLimit: user ? Math.max(0, user.imageLimit - user.imageCount) : null });
+    res.json({ success: true, file: result });
   } catch (err) {
-    console.error('Tasvir yaratishda xatolik:', err);
-    res.status(500).json({ error: err.message });
+    console.error('Hujjat yaratishda xatolik:', err);
+    res.status(500).json({ error: err.message || 'Hujjat yaratilmadi' });
   }
 });
 
@@ -1092,5 +1084,6 @@ if (!process.env.VERCEL) {
   });
 }
 
+export { generateExcelFile, generateWordFile, generatePdfFile };
 export default app;
 

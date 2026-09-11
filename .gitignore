@@ -15,4 +15,4 @@ public/uploads/images/*
 !public/uploads/images/.gitkeep
 public/uploads/docs/*
 !public/uploads/docs/.gitkeep
-
+.freebuff/

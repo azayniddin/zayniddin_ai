@@ -123,10 +123,15 @@
             <i data-lucide="square-pen" style="width: 19px; height: 19px;"></i>
           </button>
 
-          <!-- AI Image Generator Button -->
-          <button class="pill-btn draw-btn" id="openDrawModalBtn" title="AI Bilan Rasm Chizish">
-            <i data-lucide="palette" style="width: 16px; height: 16px;"></i>
-            <span class="desktop-only-text">Rasm</span>
+          <!-- Google Tools Hub Button -->
+          <button class="pill-btn google-hub-btn" id="openGoogleModalBtn" title="Google Vositalari & Integratsiya">
+            <svg class="google-icon-svg" viewBox="0 0 24 24" width="16" height="16">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+            </svg>
+            <span class="desktop-only-text">Google</span>
           </button>
 
           <!-- Voice Mode Button -->
@@ -180,13 +185,13 @@
             <input 
               type="file" 
               id="fileUploadInput" 
-              accept="image/*,.pdf,.txt,.md,.json,.js,.ts,.py,.html,.css,.csv,.doc,.docx" 
+              accept="image/*,.pdf,.xlsx,.xls,.doc,.docx,.txt,.md,.json,.js,.ts,.py,.html,.css,.csv" 
               multiple 
               style="display: none;"
             >
 
             <!-- Attachment Button -->
-            <button class="icon-button attach-file-btn" id="attachFileBtn" title="Rasm, Fayl yoki PDF biriktirish">
+            <button class="icon-button attach-file-btn" id="attachFileBtn" title="Hujjat (PDF, Excel, Word), Rasm yoki Fayl biriktirish">
               <i data-lucide="paperclip" style="width: 20px; height: 20px;"></i>
             </button>
 
@@ -334,55 +339,114 @@
     </div>
   </div>
 
-  <!-- AI IMAGE GENERATION (DALL-E / FLUX) MODAL -->
-  <div class="settings-modal" id="drawModal">
-    <div class="settings-card glass-card">
+  <!-- GOOGLE WORKSPACE & TOOLS INTEGRATION MODAL -->
+  <div class="settings-modal" id="googleModal">
+    <div class="settings-card glass-card google-modal-card">
       <div class="settings-header">
         <div style="display: flex; align-items: center; gap: 10px;">
-          <div class="draw-modal-icon-badge">
-            <i data-lucide="palette" style="width: 20px; height: 20px; color: #ec4899;"></i>
+          <div class="google-modal-icon-badge">
+            <svg viewBox="0 0 24 24" width="22" height="22">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+            </svg>
           </div>
-          <h3>AI Bilan Rasm Chizish</h3>
+          <div>
+            <h3 style="margin: 0; font-size: 1.1rem;">Google Vositalari & Integratsiya</h3>
+            <span style="font-size: 0.78rem; color: #94a3b8;">Calendar, Drive, Docs, Sheets & Cloud</span>
+          </div>
         </div>
-        <button class="icon-button" id="closeDrawModalBtn">
+        <button class="icon-button" id="closeGoogleModalBtn">
           <i data-lucide="x" style="width: 18px; height: 18px;"></i>
         </button>
       </div>
 
       <div class="settings-body">
-        <div class="setting-group">
-          <label for="drawPromptInput">Nima rasm chizish kerak? (Tavsif)</label>
-          <textarea id="drawPromptInput" rows="3" placeholder="Masalan: Tungi ko'chada yomg'ir ostida turgan neonli sportkar, kiberpunk uslubida..."></textarea>
-        </div>
-
-        <div class="setting-group">
-          <label>San'at Uslubi (Style)</label>
-          <div class="draw-chips-group">
-            <button type="button" class="draw-style-chip active" data-style="Fotorealistik">📸 Fotorealizm</button>
-            <button type="button" class="draw-style-chip" data-style="3D Disney Pixar Render">🎬 3D Render</button>
-            <button type="button" class="draw-style-chip" data-style="Cyberpunk Neon Sci-Fi">🌌 Kiberpunk</button>
-            <button type="button" class="draw-style-chip" data-style="Anime Makoto Shinkai Style">✨ Anime</button>
-            <button type="button" class="draw-style-chip" data-style="Watercolor Painting Art">🖌️ Akvarel</button>
-            <button type="button" class="draw-style-chip" data-style="Concept Art Fantasy">🏰 Fantastika</button>
+        <!-- Google Account Connection Bar -->
+        <div class="google-account-bar">
+          <div class="google-status-pill">
+            <span class="google-status-dot" id="googleAccountStatusDot"></span>
+            <span id="googleAccountStatusText" style="font-size: 0.85rem;">Google hisobi ulanmagan</span>
+          </div>
+          <div class="google-email-form">
+            <input type="email" id="googleEmailInput" placeholder="ismingiz@gmail.com" />
+            <button type="button" class="btn-primary-sm" id="saveGoogleEmailBtn">Ulash</button>
           </div>
         </div>
 
-        <div class="setting-group">
-          <label>Tasvir O'lchami (Nisbat)</label>
-          <div class="draw-chips-group">
-            <button type="button" class="draw-ratio-chip active" data-ratio="1:1">1:1 (Kvadrat)</button>
-            <button type="button" class="draw-ratio-chip" data-ratio="16:9">16:9 (Keng ekran)</button>
-            <button type="button" class="draw-ratio-chip" data-ratio="9:16">9:16 (Telefon Fon)</button>
+        <!-- Google Apps Launcher Grid -->
+        <div class="setting-group" style="margin-top: 14px;">
+          <label style="font-weight: 600; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 8px; display: block;">Tezkor Google Ilovalari</label>
+          <div class="google-apps-grid">
+            <a href="https://calendar.google.com" target="_blank" class="google-app-tile">
+              <div class="google-app-icon" style="background: rgba(66, 133, 244, 0.15); color: #4285F4;">
+                <i data-lucide="calendar" style="width: 20px; height: 20px;"></i>
+              </div>
+              <span class="google-app-title">Google Taqvim</span>
+              <span class="google-app-sub">Jadval & Rejalar</span>
+            </a>
+
+            <a href="https://drive.google.com" target="_blank" class="google-app-tile">
+              <div class="google-app-icon" style="background: rgba(251, 188, 5, 0.15); color: #FBBC05;">
+                <i data-lucide="hard-drive" style="width: 20px; height: 20px;"></i>
+              </div>
+              <span class="google-app-title">Google Disk</span>
+              <span class="google-app-sub">Fayllar xazinasi</span>
+            </a>
+
+            <a href="https://docs.google.com/document/create" target="_blank" class="google-app-tile">
+              <div class="google-app-icon" style="background: rgba(66, 133, 244, 0.15); color: #4285F4;">
+                <i data-lucide="file-text" style="width: 20px; height: 20px;"></i>
+              </div>
+              <span class="google-app-title">Google Docs</span>
+              <span class="google-app-sub">Yangi Word hujjat</span>
+            </a>
+
+            <a href="https://sheets.google.com/spreadsheets/create" target="_blank" class="google-app-tile">
+              <div class="google-app-icon" style="background: rgba(52, 168, 83, 0.15); color: #34A853;">
+                <i data-lucide="table" style="width: 20px; height: 20px;"></i>
+              </div>
+              <span class="google-app-title">Google Sheets</span>
+              <span class="google-app-sub">Excel jadvallar</span>
+            </a>
+
+            <a href="https://keep.google.com" target="_blank" class="google-app-tile">
+              <div class="google-app-icon" style="background: rgba(251, 188, 5, 0.15); color: #FBBC05;">
+                <i data-lucide="check-square" style="width: 20px; height: 20px;"></i>
+              </div>
+              <span class="google-app-title">Google Keep</span>
+              <span class="google-app-sub">Eslatmalar & Tasks</span>
+            </a>
+
+            <a href="https://mail.google.com" target="_blank" class="google-app-tile">
+              <div class="google-app-icon" style="background: rgba(234, 67, 53, 0.15); color: #EA4335;">
+                <i data-lucide="mail" style="width: 20px; height: 20px;"></i>
+              </div>
+              <span class="google-app-title">Gmail</span>
+              <span class="google-app-sub">Xatlar & Pochta</span>
+            </a>
           </div>
         </div>
-      </div>
 
-      <div class="settings-footer">
-        <button class="btn-secondary" id="cancelDrawBtn">Bekor qilish</button>
-        <button class="btn-primary draw-submit-btn" id="submitDrawBtn">
-          <i data-lucide="sparkles" style="width: 16px; height: 16px;"></i>
-          <span>Rasm Chizish</span>
-        </button>
+        <!-- AI Prompts For Google Integration -->
+        <div class="setting-group" style="margin-top: 14px;">
+          <label style="font-weight: 600; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 8px; display: block;">AI ga Google bo‘yicha topshiriq berish</label>
+          <div class="google-prompt-chips">
+            <button type="button" class="google-prompt-chip" data-prompt="Menga haftalik ish rejasi bo‘yicha Google Sheets uchun chiroyli Excel jadval tuzib ber">
+              📊 Haftalik reja (Sheets Excel)
+            </button>
+            <button type="button" class="google-prompt-chip" data-prompt="Google Docs uchun xizmat ko‘rsatish bo‘yicha to‘liq shartnoma hujjati (Word) tayyorlab ber">
+              📄 Xizmat shartnomasi (Docs Word)
+            </button>
+            <button type="button" class="google-prompt-chip" data-prompt="Ertaga soat 10:00 da muhim loyiha taqdimotini Google Calendar taqvimiga belgilab ber">
+              📅 Taqvimga uchrashuv kiritish
+            </button>
+            <button type="button" class="google-prompt-chip" data-prompt="Kompaniya faoliyati haqida rasmiy hisobot tayyorlab, PDF formatida yuklab olishga chiqarib ber">
+              📑 Rasmiy hisobot (PDF)
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -476,6 +540,8 @@
 
   <!-- APP SCRIPTS (v4.0) -->
   <script src="/js/reminders.js?v=4.0"></script>
+  <script src="/js/documentEngine.js?v=4.0"></script>
+  <script src="/js/googleIntegration.js?v=4.0"></script>
   <script src="/js/artGenerator.js?v=4.0"></script>
   <script src="/js/voiceOrb.js?v=4.0"></script>
   <script src="/js/fileAttachment.js?v=4.0"></script>
