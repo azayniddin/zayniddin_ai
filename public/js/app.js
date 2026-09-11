@@ -539,14 +539,7 @@ function appendMessageToUI(msg) {
 
   let formattedContent = '';
   if (msg.role === 'assistant') {
-    let rawContent = msg.content || '';
-    if (window.deviceReminder) {
-      rawContent = window.deviceReminder.parseReminders(rawContent);
-    }
-    if (window.artGenerator) {
-      rawContent = window.artGenerator.parseImageCards(rawContent);
-    }
-    formattedContent = marked.parse(rawContent);
+    formattedContent = formatAssistantMessage(msg.content || '');
   } else {
     // Xavfsiz user matni
     formattedContent = `<p>${escapeHtml(msg.content || '')}</p>`;
@@ -653,10 +646,68 @@ function formatFileSize(bytes) {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
 }
 
+// AI xabarlarini Markdown, Tasvirlar va Eslatmalarni to'g'ri render qilish
+function formatAssistantMessage(content) {
+  if (!content) return '';
+  let text = content;
+
+  // 1. Agar image-card tokenlari bo'lsa, marked.parse ularni kodga aylantirib yubormasligi uchun vaqtincha xavfsiz token bilan saqlaymiz
+  const imageCards = [];
+  text = text.replace(/:::image-card\s*([\s\S]*?)\s*:::/g, (match, jsonStr) => {
+    const placeholder = `__IMG_CARD_PH_${imageCards.length}__`;
+    imageCards.push(jsonStr.trim());
+    return `\n\n${placeholder}\n\n`;
+  });
+
+  // 2. Eslatmalarni (reminders) tayyorlash
+  if (window.deviceReminder) {
+    text = window.deviceReminder.parseReminders(text);
+  }
+
+  // 3. Markdown parse
+  let html = marked.parse(text);
+
+  // 4. image-card placeholderlarini toza HTML kartochkaga almashtirish
+  imageCards.forEach((jsonStr, idx) => {
+    let cardHtml = '';
+    try {
+      let cleanJson = jsonStr.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+      const data = JSON.parse(cleanJson);
+      if (window.artGenerator) {
+        cardHtml = window.artGenerator.renderImageCardHtml(data);
+      }
+    } catch (e) {
+      console.warn('Image-card JSON parse xatosi:', e);
+    }
+    const ph = `__IMG_CARD_PH_${idx}__`;
+    // Marked uni <p>__IMG_CARD_PH_0__</p> qilib qo'ygan bo'lishi mumkin
+    html = html.replace(new RegExp(`<p>\\s*${ph}\\s*<\\/p>`, 'g'), cardHtml);
+    html = html.replace(new RegExp(ph, 'g'), cardHtml);
+  });
+
+  // 5. Agar matnda to'g'ridan-to'g'ri :::image-card qolgan bo'lsa (masalan qisman streamingda)
+  if (window.artGenerator) {
+    html = window.artGenerator.parseImageCards(html);
+  }
+
+  return html;
+}
+
 // Kod bloklariga Nusxalash tugmalarini o'rnatish
 function setupCodeBlocks(container) {
+  // Agar tasodifan rasm HTML kartochkasi pre/code ichiga tushib qolgan bo'lsa, uni chiqarib haqiqiy rasmga aylantirish (Skrinshotdagi kabi holatlarni tuzatish)
   const codeBlocks = container.querySelectorAll('pre');
   codeBlocks.forEach(pre => {
+    const rawText = pre.innerText || pre.textContent || '';
+    if (rawText.includes('ai-image-showcase') || rawText.includes('ai-image-wrapper') || rawText.includes('/uploads/generated/')) {
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = rawText;
+      if (tempDiv.querySelector('.ai-image-showcase') || tempDiv.querySelector('img')) {
+        pre.replaceWith(tempDiv.firstElementChild || tempDiv);
+        return;
+      }
+    }
+
     if (pre.querySelector('.code-header')) return; // agar allaqachon bo'lsa
 
     const code = pre.querySelector('code');
@@ -823,14 +874,7 @@ async function sendMessage(customContent = null, customImage = null, customFiles
             }
             if (data.chunk) {
               accumulatedText += data.chunk;
-              let contentToRender = accumulatedText;
-              if (window.deviceReminder) {
-                contentToRender = window.deviceReminder.parseReminders(contentToRender);
-              }
-              if (window.artGenerator) {
-                contentToRender = window.artGenerator.parseImageCards(contentToRender);
-              }
-              markdownBody.innerHTML = marked.parse(contentToRender);
+              markdownBody.innerHTML = formatAssistantMessage(accumulatedText);
               setupCodeBlocks(aiRow);
               if (window.lucide) lucide.createIcons();
               scrollToBottom();

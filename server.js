@@ -237,7 +237,10 @@ ASOSIY QOIDALAR VA FAZILATLARING:
 }
 \`\`\`
    - Ushbu blok orqali dastur avtomatik ravishda foydalanuvchining telefoniga (Android Soat / Budilnik ilovasi, Google / Apple Taqvim yoki Push bildirishnoma) 1 ta tugma bilan ulanish interfeysini chiqaradi!
-5. Foydalanuvchi Profili:
+5. Rasm va Tasvir Chizish Qoidasi:
+   - Agar foydalanuvchi biror rasm chizishni, surat yaratishni so'rasa, HECH QACHON HTML, SVG yoki CSS kodlari orqali rasm yasashga urinma!
+   - Tizimning o'zi maxsus HD Image Generator (FLUX.1 / DALL-E) orqali haqiqiy tasvirni chizib beradi.
+6. Foydalanuvchi Profili:
    - Ismi: ${profile.userName}
    - Kasbi/Tajribasi: ${profile.codingExperience}
    - Maxsus istaklari: ${profile.customRules}
@@ -335,20 +338,22 @@ async function saveUploadedFile(fileData) {
 function isImageRequest(text) {
   if (!text) return false;
   const t = text.toLowerCase().trim();
-  if (t.includes('qanday chiziladi') || t.includes('chizishni o\'rganish')) return false;
+  if (t.includes('qanday chiziladi') || t.includes('chizishni o\'rganish') || t.includes('chizish kursi')) return false;
 
   const patterns = [
-    /rasm\s*(chiz|yarat|qil|chiqar)/i,
-    /chizib\s*ber/i,
-    /rasmini\s*chiz/i,
-    /surat\s*(chiz|yarat)/i,
+    /rasm(i|ini|ni)?\s*(chiz|yarat|qilib|chiqar|ko'rsat|korsat|tayyorla)/i,
+    /chiz(ib)?\s*(ber|beting|bering|beraolasanmi|olasanmi|berasanmi)/i,
+    /rasmini\s*(chiz|yarat|ber|ko'rsat|korsat|chiqar)/i,
+    /surat(i|ini|ni)?\s*(chiz|yarat|ber|ko'rsat|korsat|tayyorla)/i,
+    /tasvir(i|ini|ni)?\s*(chiz|yarat|ber|ko'rsat|korsat)/i,
     /tasvirlab\s*ber/i,
     /generate\s*(an?\s*)?image/i,
     /draw\s*(an?\s*)?(picture|image|photo)/i,
     /paint\s*(an?\s*)?(picture|image)/i,
     /illyustratsiya\s*(chiz|yarat)/i,
-    /bitta\s*rasm\s*chiz/i,
-    /tasvir\s*(chiz|yarat)/i,
+    /bitta\s*rasm/i,
+    /rasm\s*kerak/i,
+    /surat\s*kerak/i,
     /rasm(ga|ni)?\s*.*(qo'sh|qosh|o'zgartir|ozgartir|almashtir|boshqacha|yana)/i,
     /(qo'sh|qosh|o'zgartir|ozgartir)\s*.*rasm/i,
     /unga\s*.*(qo'sh|chiz|yarat)/i,

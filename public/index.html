@@ -38,6 +38,8 @@
   <div class="ambient-mesh-glow sphere-indigo"></div>
   <div class="ambient-mesh-glow sphere-cyan"></div>
   <div class="ambient-mesh-glow sphere-purple"></div>
+  <div class="ambient-mesh-glow sphere-rose"></div>
+  <div class="ambient-mesh-glow sphere-blue"></div>
 
   <!-- Mobile Backdrop Overlay for Sidebar -->
   <div class="sidebar-overlay" id="sidebarOverlay" onclick="window.closeAppSidebar()"></div>
@@ -157,26 +159,7 @@
               <div class="avatar-ring-pulse"></div>
             </div>
             <h2 id="welcomeGreeting">Salom! Men <span class="gradient-text">zayniddin_ai</span></h2>
-            <p>Sizning shaxsiy va yuqori intellektli AI hamrohingiz. Kod yozish, ekrandagi xatolarni ko'rib tahlil qilish, Siri ovozli muloqot va barcha murakkab vazifalarda siz bilan birgaman.</p>
-
-            <div class="quick-prompts">
-              <div class="prompt-card" data-prompt="Koddagi qiyin algoritmni hayotiy misol bilan sodda tushuntirib ber">
-                <h4>🧠 Kodni Tushuntirish</h4>
-                <p>Murakkab algoritmni oddiy misolda anglash</p>
-              </div>
-              <div class="prompt-card" data-prompt="Menga hozirgi zamonaviy Fullstack loyiha arxitekturasini qadamma-qadam rejalashtirib ber">
-                <h4>🏗️ Loyiha Arxitekturasi</h4>
-                <p>Clean architecture va best practice reja</p>
-              </div>
-              <div class="prompt-card" data-prompt="Skrinshot yoki kameradan olingan rasmni tahlil qilib xatoni top">
-                <h4>📸 Rasmdagi Xatoni Qidirish</h4>
-                <p>Kameradan rasm yoki skrinshot tahlili</p>
-              </div>
-              <div class="prompt-card" data-prompt="Bugungi rejamni tuzishga va eng muhim vazifalarni aniqlashga yordam ber">
-                <h4>⚡ Shaxsiy Maslahat</h4>
-                <p>Vaqtni to'g'ri taqsimlash va unumdorlik</p>
-              </div>
-            </div>
+            <p>Sizning shaxsiy va yuqori intellektli AI hamrohingiz. Savol bering, rasm chizdiring yoki Siri orqali jonli ovozli suhbatlashing.</p>
           </div>
 
           <!-- Xabarlar bu yerga dinamik qo'shiladi -->
@@ -264,24 +247,21 @@
 
       <!-- Live Transcript Box -->
       <div class="voice-transcript-box-compact" id="voiceTranscriptBox">
-        "Salom! Sizni eshityapman, marhamat gapiring yoki pastga yozing..."
+        "Salom! Sizni eshityapman, marhamat bemalol gapiring..."
       </div>
 
-      <!-- Siri Controls & Quick Text Input -->
+      <!-- Pure Voice Conversation Controls (No typing needed) -->
       <div class="siri-bottom-bar">
-        <div class="siri-quick-input-row">
-          <input type="text" id="siriQuickInput" placeholder="Yozib ham yuborishingiz mumkin...">
-          <button class="siri-send-btn" id="siriSendQuickBtn" title="Yuborish">
-            <i data-lucide="arrow-up" style="width: 16px; height: 16px;"></i>
-          </button>
+        <div class="siri-voice-hint-row">
+          <span class="siri-hint-text"><i data-lucide="sparkles" style="width: 14px; height: 14px;"></i> Gapirishingiz bilan AI avtomatik javob beradi</span>
         </div>
 
         <div class="voice-controls-compact">
           <button class="voice-control-btn mic-active" id="voiceMicToggleBtn" title="Mikrofonni boshqarish">
             <i data-lucide="mic" id="voiceMicIcon" style="width: 22px; height: 22px;"></i>
           </button>
-          <button class="voice-control-btn" id="voiceStopSpeechBtn" title="Ovozni to'xtatish">
-            <i data-lucide="volume-x" style="width: 20px; height: 20px;"></i>
+          <button class="voice-control-btn stop-btn" id="voiceStopSpeechBtn" title="AIni to'xtatish">
+            <i data-lucide="square" style="width: 18px; height: 18px;"></i>
           </button>
         </div>
       </div>

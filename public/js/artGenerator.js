@@ -128,13 +128,16 @@ class ArtGeneratorManager {
     }
   }
 
-  // Markdown ichidagi :::image-card ::: bloklarini interaktiv kartochkaga aylantirish
+  // Markdown yoki HTML ichidagi :::image-card ::: bloklarini interaktiv kartochkaga aylantirish
   parseImageCards(content) {
     if (!content) return content;
     const regex = /:::image-card\s*([\s\S]*?)\s*:::/g;
     return content.replace(regex, (match, jsonStr) => {
       try {
-        const data = JSON.parse(jsonStr.trim());
+        let cleanJson = jsonStr.trim();
+        // HTML entity bo'lib qolgan bo'lsa tozalash
+        cleanJson = cleanJson.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+        const data = JSON.parse(cleanJson);
         return this.renderImageCardHtml(data);
       } catch (e) {
         console.warn('Image-card JSON parse error:', e);
@@ -146,32 +149,31 @@ class ArtGeneratorManager {
   renderImageCardHtml(data) {
     const imageUrl = data.imageUrl || '';
     const prompt = data.prompt || 'AI Tasvir';
-    const safePrompt = prompt.replace(/'/g, "\\'");
+    const safePrompt = (prompt || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
     const filename = `zayniddin_ai_${Date.now()}.jpg`;
 
-    return `
-      <div class="ai-image-showcase glass-card">
-        <div class="ai-image-wrapper" onclick="window.artGenerator.openLightbox('${imageUrl}', '${safePrompt}')">
-          <img src="${imageUrl}" alt="${prompt}" class="ai-generated-img" loading="lazy" />
-          <div class="ai-image-overlay">
-            <span class="ai-image-zoom-badge"><i data-lucide="maximize-2" style="width: 16px; height: 16px;"></i> Kattalashtirish</span>
-          </div>
-        </div>
-        <div class="ai-image-meta">
-          <div class="ai-image-prompt-text">🎨 ${prompt}</div>
-          <div class="ai-image-actions">
-            <button class="ai-img-btn download-btn" onclick="window.artGenerator.downloadImage('${imageUrl}', '${filename}')" title="Telefonga yuklab olish">
-              <i data-lucide="download" style="width: 15px; height: 15px;"></i>
-              <span>Yuklab olish</span>
-            </button>
-            <button class="ai-img-btn view-btn" onclick="window.artGenerator.openLightbox('${imageUrl}', '${safePrompt}')" title="To'liq ekranda ko'rish">
-              <i data-lucide="expand" style="width: 15px; height: 15px;"></i>
-              <span>Ko‘rish</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    `;
+    // Qat'iy qoida: hech qanday boshlang'ich bo'shliq (indentation) bo'lmasligi kerak, aks holda Markdown parser uni kod bloki deb o'ylaydi!
+    return `<div class="ai-image-showcase glass-card">` +
+      `<div class="ai-image-wrapper" onclick="window.artGenerator.openLightbox('${imageUrl}', '${safePrompt}')">` +
+        `<img src="${imageUrl}" alt="${prompt}" class="ai-generated-img" loading="lazy" />` +
+        `<div class="ai-image-overlay">` +
+          `<span class="ai-image-zoom-badge"><i data-lucide="maximize-2" style="width: 16px; height: 16px;"></i> Kattalashtirish</span>` +
+        `</div>` +
+      `</div>` +
+      `<div class="ai-image-meta">` +
+        `<div class="ai-image-prompt-text">🎨 ${prompt}</div>` +
+        `<div class="ai-image-actions">` +
+          `<button class="ai-img-btn download-btn" onclick="window.artGenerator.downloadImage('${imageUrl}', '${filename}')" title="Telefonga yuklab olish">` +
+            `<i data-lucide="download" style="width: 15px; height: 15px;"></i>` +
+            `<span>Yuklab olish</span>` +
+          `</button>` +
+          `<button class="ai-img-btn view-btn" onclick="window.artGenerator.openLightbox('${imageUrl}', '${safePrompt}')" title="To'liq ekranda ko'rish">` +
+            `<i data-lucide="expand" style="width: 15px; height: 15px;"></i>` +
+            `<span>Ko‘rish</span>` +
+          `</button>` +
+        `</div>` +
+      `</div>` +
+    `</div>`;
   }
 
   openLightbox(imageUrl, title) {
